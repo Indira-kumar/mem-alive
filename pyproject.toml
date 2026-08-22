@@ -10,10 +10,18 @@ package = false
 members = ["packages/*"]
 
 [dependency-groups]
-dev = ["pytest", "ruff", "ty"]
+dev = [
+    "pytest",
+    "pytest-asyncio>=1.4.0",
+    "ruff",
+    "ty",
+]
 
 [tool.ruff]
 line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]   # E/F = pyflakes+pycodestyle basics, I = import sorting
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

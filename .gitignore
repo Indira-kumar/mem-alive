@@ -1,1 +1,26 @@
 spec/
+
+# Python bytecode / cache
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.ty_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Packaging / build artifacts
+dist/
+build/
+*.egg-info/
+
+# Test / coverage output
+.coverage
+htmlcov/
+
+# Editor/OS cruft
+.DS_Store
+.vscode/
+.idea/
