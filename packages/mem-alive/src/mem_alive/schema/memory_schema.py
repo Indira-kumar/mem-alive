@@ -13,3 +13,7 @@ class Memory:
     superseded: bool = False
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SearchResult:
+    memory: Memory
+    score: float

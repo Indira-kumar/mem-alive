@@ -4,7 +4,7 @@ from collections import defaultdict
 import numpy as np
 
 from ..backend.storage_backend_interface import StorageBackend
-from ..schema.memory_schema import Memory
+from ..schema.memory_schema import Memory, SearchResult
 
 
 class InMemoryBackend(StorageBackend):
@@ -17,7 +17,7 @@ class InMemoryBackend(StorageBackend):
 
     def search(
         self, namespace: str, vector: list[float], metadata: dict, top_k: int = 50
-    ) -> list[Memory]:
+    ) -> list[SearchResult]:
         id_in_namespace = list(self._by_namespace.get(namespace, set()))
         candidates = [self._data[i] for i in id_in_namespace]
         if metadata:
@@ -38,7 +38,7 @@ class InMemoryBackend(StorageBackend):
         top = heapq.nlargest(
             top_k, zip(cosine_similarity_scores, candidates), key=lambda pair: pair[0]
         )
-        return [memory for _, memory in top]
+        return [SearchResult(memory=memory, score=float(score)) for score, memory in top]
 
     def get_memory_by_id(self, namespace: str, id: str) -> Memory | None:
         found_ids = self._by_namespace.get(namespace, set())

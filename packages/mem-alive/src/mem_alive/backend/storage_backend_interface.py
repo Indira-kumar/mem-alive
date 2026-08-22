@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 
-from ..schema.memory_schema import Memory
+from ..schema.memory_schema import Memory, SearchResult
 
 
 class StorageBackend(ABC):
     @abstractmethod
     def search(
         self, namespace: str, vector: list[float], metadata: dict, top_k: int = 50
-    ) -> list[Memory]:
+    ) -> list[SearchResult]:
         pass
 
     @abstractmethod
