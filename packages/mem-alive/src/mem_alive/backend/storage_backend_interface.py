@@ -4,11 +4,11 @@ from ..schema.memory_schema import Memory
 class StorageBackend(ABC):
 
     @abstractmethod
-    def search(self, vector:list[float], metadata:dict, namespace: str, top_k:int = 50) -> list[Memory]:
+    def search(self, namespace:str, vector:list[float], metadata:dict, top_k:int = 50) -> list[Memory]:
         pass
 
     @abstractmethod
-    def get_memory_by_id(self, id: str) -> Memory:
+    def get_memory_by_id(self, namespace:str, id: str) -> Memory|None:
         pass
 
     @abstractmethod
@@ -16,5 +16,5 @@ class StorageBackend(ABC):
         pass
 
     @abstractmethod
-    def delete(self, id: str, namespace:str):
+    def delete(self, namespace:str, id: str):
         pass
