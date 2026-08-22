@@ -44,3 +44,5 @@ Public API surface, how the coding-agent use case sits on top without leaking in
 ## Status
 
 Pre-code. Architecture first.
+
+claude --resume 900f7f37-f853-4412-9bcd-b67985addf94

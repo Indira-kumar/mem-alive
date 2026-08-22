@@ -1,0 +1,43 @@
+from .store_interface import Store 
+from ..embedding.embedding_provider import EmbeddingProvider
+from ..backend.storage_backend_interface import StorageBackend
+from ..schema.memory_schema import Memory
+
+from uuid import uuid4
+
+class ProceduralStore(Store):
+    def __init__(self, embedding_provider: EmbeddingProvider, db: StorageBackend, over_fetch_k:int = 100,
+                 recall_threshold:float = 0.8, keyword_weight: float = 0.5):
+        self._embedding_provider = embedding_provider
+        self._db = db
+        self._over_fetch_k = over_fetch_k
+        self._recall_threshold = recall_threshold
+        self._keyword_weight = keyword_weight
+
+    async def recall(self, namespace:str, search_query:str, metadata:dict, top_k:int = 3):
+        search_query_vector = (await self._embedding_provider.embed([search_query]))[0]
+        candidates = self._db.search(namespace=namespace, vector=search_query_vector, metadata=metadata, top_k=self._over_fetch_k)
+        candidates = [r for r in candidates if r.score > self._recall_threshold]
+        results = []
+        for r in candidates:
+            keyword_score = self._keyword_score(search_query=search_query, content=r.memory.content)
+            blended_score = self._keyword_weight * keyword_score + (1 - self._keyword_weight) * r.score
+            results.append((blended_score, r.memory))
+        results.sort(key=lambda r: r[0], reverse=True)
+        return [r[1] for r in results[:top_k]]
+
+    async def remember(self, namespace:str, fact:str, metadata:dict):
+        fact_vector = (await self._embedding_provider.embed([fact]))[0]
+        memory = Memory(id=str(uuid4()), content=fact,vector=fact_vector, namespace=namespace, metadata=metadata, 
+                        memory_type='procedural')
+        self._db.upsert(memory=memory)
+
+    def _keyword_score(self, search_query:str, content:str):
+        # TODO: Improve to a better algo like BM25
+        query_tokens = set(search_query.lower().split())
+        content_tokens = set(content.lower().split())
+
+        if not query_tokens:
+            return 0.0
+        overlap = query_tokens & content_tokens
+        return len(overlap) / len(query_tokens)
