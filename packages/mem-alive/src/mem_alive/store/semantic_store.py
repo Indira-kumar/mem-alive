@@ -31,8 +31,9 @@ class SemanticStore(Store):
             top_k=self._over_fetch_k,
             metadata=metadata,
         )
+        memories = [memory for memory in memories if memory.score > self._similarity_threshold]
         top_k = top_k or self._top_k
-        return [memory for memory in memories if not memory.superseded][:top_k]
+        return [r.memory for r in memories if not r.memory.superseded][:top_k]
 
     async def remember(self, namespace: str, fact: str, metadata: dict):
         fact_vector = (await self._embedding_provider.embed([fact]))[0]
