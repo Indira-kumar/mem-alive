@@ -18,12 +18,10 @@ class SemanticStore(Store):
         contradiction_threshold: float = 0.8,
         contradiction_check_k: int = 5
     ):
-        self._embedding_provider = embedding_provider
-        self._db = db
+        super().__init__(embedding_provider=embedding_provider, db=db, recall_threshold=recall_threshold)
         self._over_fetch_k = max(100, top_k)
         self._contradiction_check_k = contradiction_check_k
         self._top_k = top_k
-        self._recall_threshold = recall_threshold
         self._contradiction_threshold = contradiction_threshold
 
     async def recall(

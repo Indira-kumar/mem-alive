@@ -8,10 +8,8 @@ from uuid import uuid4
 class EpisodicStore(Store):
     def __init__(self, embedding_provider: EmbeddingProvider, db:StorageBackend, over_fetch_k: int = 100,
                  recall_threshold: float = 0.8, half_life_hours:float = 36):
-        self._embedding_provider = embedding_provider
-        self._db = db
+        super().__init__(embedding_provider=embedding_provider, db=db, recall_threshold=recall_threshold)
         self._over_fetch_k = over_fetch_k
-        self._recall_threshold = recall_threshold
         self._half_life_hours = half_life_hours
 
     async def recall(
