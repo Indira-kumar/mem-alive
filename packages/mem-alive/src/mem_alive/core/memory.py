@@ -23,7 +23,7 @@ class Memory:
         metadata: dict,
         top_k: int | None = None,
         memory_type: str | None = None,
-    ) -> list[MemoryRecord] | None:
+    ) -> list[MemoryRecord]:
         metadata = metadata or {}
         if memory_type:
             return await self._stores[memory_type].recall(

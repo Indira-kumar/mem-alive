@@ -14,11 +14,11 @@ class LocalEmbeddingProvider(EmbeddingProvider):
         response = response.json()["embeddings"]
         return response
 
-    async def aclose(self, exc_type, exc_value, traceback):
+    async def aclose(self):
         await self.client.aclose()
 
     async def __aenter__(self):
         return self
 
-    async def __aexit__(self):
+    async def __aexit__(self, exc_type, exc_value, traceback):
         await self.aclose()

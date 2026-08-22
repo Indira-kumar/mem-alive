@@ -21,7 +21,9 @@ class ProceduralStore(Store):
         self._over_fetch_k = over_fetch_k
         self._keyword_weight = keyword_weight
 
-    async def recall(self, namespace: str, search_query: str, metadata: dict, top_k: int = 3):
+    async def recall(
+        self, namespace: str, search_query: str, metadata: dict, top_k: int | None = None
+    ):
         search_query_vector = (await self._embedding_provider.embed([search_query]))[0]
         candidates = await self._db.search(
             namespace=namespace,

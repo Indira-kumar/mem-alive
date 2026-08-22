@@ -28,7 +28,7 @@ class SemanticStore(Store):
 
     async def recall(
         self, namespace: str, search_query: str, metadata: dict, top_k: int | None = None
-    ) -> list[Memory] | None:
+    ) -> list[Memory]:
         search_query_vector = (await self._embedding_provider.embed([search_query]))[0]
         search_results = await self._db.search(
             namespace=namespace,
