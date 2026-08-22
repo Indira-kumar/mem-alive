@@ -16,7 +16,7 @@ class ProceduralStore(Store):
 
     async def recall(self, namespace:str, search_query:str, metadata:dict, top_k:int = 3):
         search_query_vector = (await self._embedding_provider.embed([search_query]))[0]
-        candidates = self._db.search(namespace=namespace, vector=search_query_vector, metadata=metadata, top_k=self._over_fetch_k)
+        candidates = await self._db.search(namespace=namespace, vector=search_query_vector, metadata=metadata, top_k=self._over_fetch_k)
         candidates = [r for r in candidates if r.score > self._recall_threshold]
         results = []
         for r in candidates:
@@ -30,7 +30,7 @@ class ProceduralStore(Store):
         fact_vector = (await self._embedding_provider.embed([fact]))[0]
         memory = Memory(id=str(uuid4()), content=fact,vector=fact_vector, namespace=namespace, metadata=metadata, 
                         memory_type='procedural')
-        self._db.upsert(memory=memory)
+        await self._db.upsert(memory=memory)
 
     def _keyword_score(self, search_query:str, content:str):
         # TODO: Improve to a better algo like BM25

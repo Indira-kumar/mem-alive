@@ -18,7 +18,7 @@ class EpisodicStore(Store):
         self, namespace: str, search_query: str, metadata: dict, top_k: int|None = None
     ) -> list[Memory] | None:
         search_query_vector = (await self._embedding_provider.embed([search_query]))[0]
-        search_results = self._db.search(namespace=namespace, vector=search_query_vector, metadata=metadata, 
+        search_results = await self._db.search(namespace=namespace, vector=search_query_vector, metadata=metadata, 
                                          top_k=self._over_fetch_k)
 
         # filtering unrelated memory before decay gets applied.
@@ -36,4 +36,4 @@ class EpisodicStore(Store):
         fact_vector = (await self._embedding_provider.embed([fact]))[0]
         memory = Memory(id=id, namespace=namespace, content=fact, vector=fact_vector, metadata=metadata, 
                         memory_type='episodic')
-        self._db.upsert(memory=memory)
+        await self._db.upsert(memory=memory)

@@ -15,7 +15,7 @@ class InMemoryBackend(StorageBackend):
         # namespace to id mapping
         self._by_namespace: dict[str, set[str]] = defaultdict(set)
 
-    def search(
+    async def search(
         self, namespace: str, vector: list[float], metadata: dict, top_k: int = 50
     ) -> list[SearchResult]:
         id_in_namespace = list(self._by_namespace.get(namespace, set()))
@@ -40,16 +40,16 @@ class InMemoryBackend(StorageBackend):
         )
         return [SearchResult(memory=memory, score=float(score)) for score, memory in top]
 
-    def get_memory_by_id(self, namespace: str, id: str) -> Memory | None:
+    async def get_memory_by_id(self, namespace: str, id: str) -> Memory | None:
         found_ids = self._by_namespace.get(namespace, set())
         if id in found_ids:
             return self._data[id]
 
-    def upsert(self, memory: Memory) -> None:
+    async def upsert(self, memory: Memory) -> None:
         self._by_namespace[memory.namespace].add(memory.id)
         self._data[memory.id] = memory
 
-    def delete(self, namespace: str, id: str):
+    async def delete(self, namespace: str, id: str):
         found_ids = self._by_namespace.get(namespace, set())
         if id in found_ids:
             self._by_namespace[namespace].remove(id)

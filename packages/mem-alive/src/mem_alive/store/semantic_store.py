@@ -30,7 +30,7 @@ class SemanticStore(Store):
         self, namespace: str, search_query: str, metadata: dict, top_k: int|None = None
     ) -> list[Memory] | None:
         search_query_vector = (await self._embedding_provider.embed([search_query]))[0]
-        search_results = self._db.search(
+        search_results = await self._db.search(
             namespace=namespace,
             vector=search_query_vector,
             top_k=self._over_fetch_k,
@@ -44,7 +44,7 @@ class SemanticStore(Store):
 
     async def remember(self, namespace: str, fact: str, metadata: dict):
         fact_vector = (await self._embedding_provider.embed([fact]))[0]
-        self._supersede_similar_memory(namespace=namespace, fact_vector=fact_vector, metadata=metadata)
+        await self._supersede_similar_memory(namespace=namespace, fact_vector=fact_vector, metadata=metadata)
         id = str(uuid.uuid4())
         memory = Memory(
             id=id,
@@ -54,10 +54,10 @@ class SemanticStore(Store):
             namespace=namespace,
             memory_type="semantic",
         )
-        self._db.upsert(memory=memory)
+        await self._db.upsert(memory=memory)
 
-    def _supersede_similar_memory(self, namespace:str, fact_vector:list[float], metadata:dict):
-        search_results = self._db.search(namespace=namespace, vector=fact_vector, top_k=self._contradiction_check_k,
+    async def _supersede_similar_memory(self, namespace:str, fact_vector:list[float], metadata:dict):
+        search_results = await self._db.search(namespace=namespace, vector=fact_vector, top_k=self._contradiction_check_k,
                                          metadata=metadata)
         search_results = [r for r in search_results if r.memory.superseded is False]
         if not search_results:
@@ -65,4 +65,4 @@ class SemanticStore(Store):
         best_match = max(search_results, key=lambda r: r.score)
         if best_match.score > self._contradiction_threshold:
             updated_memory = replace(best_match.memory, superseded=True, updated_at=datetime.now(timezone.utc))
-            self._db.upsert(updated_memory)
+            await self._db.upsert(updated_memory)
