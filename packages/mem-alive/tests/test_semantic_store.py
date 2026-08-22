@@ -13,7 +13,9 @@ async def test_remember_then_recall_roundtrip(backend, make_embedding_provider):
     store = make_store(backend, make_embedding_provider)
     await store.remember(namespace="ns", fact="the capital of france is paris", metadata={})
 
-    results = await store.recall(namespace="ns", search_query="the capital of france is paris", metadata={})
+    results = await store.recall(
+        namespace="ns", search_query="the capital of france is paris", metadata={}
+    )
 
     assert len(results) == 1
     assert results[0].content == "the capital of france is paris"
@@ -33,7 +35,9 @@ async def test_remember_supersedes_contradicting_fact(backend, make_embedding_pr
     await store.remember(namespace="ns", fact="the capital of france is paris", metadata={})
     await store.remember(namespace="ns", fact="the capital of france is lyon", metadata={})
 
-    results = await store.recall(namespace="ns", search_query="the capital of france is paris", metadata={})
+    results = await store.recall(
+        namespace="ns", search_query="the capital of france is paris", metadata={}
+    )
 
     # the old (paris) fact should be superseded, only the new (lyon) one comes back
     assert len(results) == 1
@@ -56,7 +60,9 @@ async def test_recall_excludes_other_memory_types(backend, make_embedding_provid
     )
     await backend.upsert(episodic_memory)
 
-    results = await store.recall(namespace="ns", search_query="the capital of france is paris", metadata={})
+    results = await store.recall(
+        namespace="ns", search_query="the capital of france is paris", metadata={}
+    )
 
     assert results == []
 
@@ -83,7 +89,9 @@ async def test_remember_does_not_supersede_other_memory_types(backend, make_embe
 
 
 async def test_recall_respects_top_k(backend, make_embedding_provider):
-    store = make_store(backend, make_embedding_provider, contradiction_threshold=1.1)  # disable supersession
+    store = make_store(
+        backend, make_embedding_provider, contradiction_threshold=1.1
+    )  # disable supersession
     await store.remember(namespace="ns", fact="the capital of france is paris", metadata={})
     await store.remember(namespace="ns", fact="the capital of france is lyon", metadata={})
 

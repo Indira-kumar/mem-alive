@@ -32,11 +32,18 @@ async def test_recall_filters_out_unrelated_memories(backend, make_embedding_pro
 
 async def test_recall_ranks_recent_memory_above_old_memory(backend, make_embedding_provider):
     provider = make_embedding_provider(VOCAB)
-    store = EpisodicStore(embedding_provider=provider, db=backend, half_life_hours=36, recall_threshold=0.8)
+    store = EpisodicStore(
+        embedding_provider=provider, db=backend, half_life_hours=36, recall_threshold=0.8
+    )
     vector = (await provider.embed(["team meeting"]))[0]
 
     new_memory = Memory(
-        id="new", content="team meeting", vector=vector, metadata={}, memory_type="episodic", namespace="ns"
+        id="new",
+        content="team meeting",
+        vector=vector,
+        metadata={},
+        memory_type="episodic",
+        namespace="ns",
     )
     old_memory = Memory(
         id="old",

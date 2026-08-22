@@ -12,7 +12,9 @@ async def test_remember_then_recall_roundtrip(backend, make_embedding_provider):
     store = make_store(backend, make_embedding_provider)
     await store.remember(namespace="ns", fact="restart the docker service", metadata={})
 
-    results = await store.recall(namespace="ns", search_query="restart the docker service", metadata={})
+    results = await store.recall(
+        namespace="ns", search_query="restart the docker service", metadata={}
+    )
 
     assert len(results) == 1
     assert results[0].content == "restart the docker service"

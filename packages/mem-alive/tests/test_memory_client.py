@@ -1,6 +1,17 @@
 from mem_alive.core.memory import Memory
 
-VOCAB = ["deploy", "runbook", "docker", "team", "standup", "capital", "france", "paris", "weather", "today"]
+VOCAB = [
+    "deploy",
+    "runbook",
+    "docker",
+    "team",
+    "standup",
+    "capital",
+    "france",
+    "paris",
+    "weather",
+    "today",
+]
 
 
 def make_client(backend, provider_factory):
@@ -10,7 +21,9 @@ def make_client(backend, provider_factory):
 
 async def test_targeted_recall_only_hits_requested_store(backend, make_embedding_provider):
     client = make_client(backend, make_embedding_provider)
-    await client.remember(memory_type="semantic", namespace="ns", fact="capital france paris", metadata={})
+    await client.remember(
+        memory_type="semantic", namespace="ns", fact="capital france paris", metadata={}
+    )
     await client.remember(memory_type="episodic", namespace="ns", fact="team standup", metadata={})
 
     results = await client.recall(
@@ -38,7 +51,9 @@ async def test_federated_recall_merges_all_store_types(backend, make_embedding_p
 
 async def test_federated_recall_excludes_unrelated_memories(backend, make_embedding_provider):
     client = make_client(backend, make_embedding_provider)
-    await client.remember(memory_type="semantic", namespace="ns", fact="capital france paris", metadata={})
+    await client.remember(
+        memory_type="semantic", namespace="ns", fact="capital france paris", metadata={}
+    )
 
     results = await client.recall(namespace="ns", search_query="weather today", metadata={})
 

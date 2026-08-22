@@ -1,38 +1,64 @@
 from datetime import datetime, timezone
-from .store_interface import Store
-from ..embedding.embedding_provider import EmbeddingProvider
-from ..backend.storage_backend_interface import StorageBackend
-from ..schema.memory_schema import Memory
 from uuid import uuid4
 
+from ..backend.storage_backend_interface import StorageBackend
+from ..embedding.embedding_provider import EmbeddingProvider
+from ..schema.memory_schema import Memory
+from .store_interface import Store
+
+
 class EpisodicStore(Store):
-    def __init__(self, embedding_provider: EmbeddingProvider, db:StorageBackend, over_fetch_k: int = 100,
-                 recall_threshold: float = 0.8, half_life_hours:float = 36):
-        super().__init__(embedding_provider=embedding_provider, db=db, recall_threshold=recall_threshold)
+    def __init__(
+        self,
+        embedding_provider: EmbeddingProvider,
+        db: StorageBackend,
+        over_fetch_k: int = 100,
+        recall_threshold: float = 0.8,
+        half_life_hours: float = 36,
+    ):
+        super().__init__(
+            embedding_provider=embedding_provider, db=db, recall_threshold=recall_threshold
+        )
         self._over_fetch_k = over_fetch_k
         self._half_life_hours = half_life_hours
 
     async def recall(
-        self, namespace: str, search_query: str, metadata: dict, top_k: int|None = None
+        self, namespace: str, search_query: str, metadata: dict, top_k: int | None = None
     ) -> list[Memory] | None:
         search_query_vector = (await self._embedding_provider.embed([search_query]))[0]
-        search_results = await self._db.search(namespace=namespace, vector=search_query_vector, metadata=metadata, 
-                                         top_k=self._over_fetch_k)
+        search_results = await self._db.search(
+            namespace=namespace,
+            vector=search_query_vector,
+            metadata=metadata,
+            top_k=self._over_fetch_k,
+        )
 
         # filtering unrelated memory before decay gets applied.
-        search_results = [r for r in search_results if r.score > self._recall_threshold
-                          and r.memory.memory_type=='episodic']
+        search_results = [
+            r
+            for r in search_results
+            if r.score > self._recall_threshold and r.memory.memory_type == "episodic"
+        ]
         decayed_results = []
         for r in search_results:
-            decay = 0.5 ** ((datetime.now(timezone.utc) - r.memory.created_at).total_seconds()/ (self._half_life_hours * 3600))
+            decay = 0.5 ** (
+                (datetime.now(timezone.utc) - r.memory.created_at).total_seconds()
+                / (self._half_life_hours * 3600)
+            )
             blended_score = r.score * decay
             decayed_results.append((blended_score, r.memory))
-        decayed_results.sort(key= lambda r: r[0], reverse=True)
+        decayed_results.sort(key=lambda r: r[0], reverse=True)
         return [r[1] for r in decayed_results[:top_k]]
 
     async def remember(self, namespace: str, fact: str, metadata: dict) -> None:
         id = str(uuid4())
         fact_vector = (await self._embedding_provider.embed([fact]))[0]
-        memory = Memory(id=id, namespace=namespace, content=fact, vector=fact_vector, metadata=metadata, 
-                        memory_type='episodic')
+        memory = Memory(
+            id=id,
+            namespace=namespace,
+            content=fact,
+            vector=fact_vector,
+            metadata=metadata,
+            memory_type="episodic",
+        )
         await self._db.upsert(memory=memory)

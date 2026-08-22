@@ -1,5 +1,4 @@
 import pytest
-
 from mem_alive.backend.in_memory_backend import InMemoryBackend
 
 from .fakes import FakeEmbeddingProvider

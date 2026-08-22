@@ -15,11 +15,10 @@ class Store(ABC):
         self._embedding_provider = embedding_provider
         self._db = db
         self._recall_threshold = recall_threshold
-        
 
     @abstractmethod
     async def recall(
-        self, namespace: str, search_query: str, metadata: dict, top_k: int|None = None
+        self, namespace: str, search_query: str, metadata: dict, top_k: int | None = None
     ) -> list[Memory] | None:
         pass
 
