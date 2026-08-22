@@ -15,7 +15,8 @@ class ProceduralStore(Store):
     async def recall(self, namespace:str, search_query:str, metadata:dict, top_k:int = 3):
         search_query_vector = (await self._embedding_provider.embed([search_query]))[0]
         candidates = await self._db.search(namespace=namespace, vector=search_query_vector, metadata=metadata, top_k=self._over_fetch_k)
-        candidates = [r for r in candidates if r.score > self._recall_threshold]
+        candidates = [r for r in candidates if r.score > self._recall_threshold
+                      and r.memory.memory_type=='procedural']
         results = []
         for r in candidates:
             keyword_score = self._keyword_score(search_query=search_query, content=r.memory.content)

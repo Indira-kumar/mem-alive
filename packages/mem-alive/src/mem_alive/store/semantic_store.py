@@ -36,7 +36,8 @@ class SemanticStore(Store):
         )
         search_results = [search_result for search_result in search_results 
                           if search_result.score > self._recall_threshold 
-                          and search_result.memory.superseded is False]
+                          and search_result.memory.superseded is False
+                          and search_result.memory.memory_type=='semantic']
         top_k = top_k or self._top_k
         return [r.memory for r in search_results][:top_k]
 
@@ -57,7 +58,8 @@ class SemanticStore(Store):
     async def _supersede_similar_memory(self, namespace:str, fact_vector:list[float], metadata:dict):
         search_results = await self._db.search(namespace=namespace, vector=fact_vector, top_k=self._contradiction_check_k,
                                          metadata=metadata)
-        search_results = [r for r in search_results if r.memory.superseded is False]
+        search_results = [r for r in search_results if r.memory.superseded is False
+                          and r.memory.memory_type=='semantic']
         if not search_results:
             return
         best_match = max(search_results, key=lambda r: r.score)

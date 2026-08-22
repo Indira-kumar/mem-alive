@@ -20,7 +20,8 @@ class EpisodicStore(Store):
                                          top_k=self._over_fetch_k)
 
         # filtering unrelated memory before decay gets applied.
-        search_results = [r for r in search_results if r.score > self._recall_threshold]
+        search_results = [r for r in search_results if r.score > self._recall_threshold
+                          and r.memory.memory_type=='episodic']
         decayed_results = []
         for r in search_results:
             decay = 0.5 ** ((datetime.now(timezone.utc) - r.memory.created_at).total_seconds()/ (self._half_life_hours * 3600))
