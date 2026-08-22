@@ -50,7 +50,7 @@ class InMemoryBackend(StorageBackend):
         self._data[memory.id] = memory
 
     def delete(self, namespace: str, id: str):
-        found_ids = self._by_namespace[namespace]
+        found_ids = self._by_namespace.get(namespace, set())
         if id in found_ids:
             self._by_namespace[namespace].remove(id)
             del self._data[id]
