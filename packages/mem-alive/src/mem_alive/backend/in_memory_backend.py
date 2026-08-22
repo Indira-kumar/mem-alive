@@ -1,10 +1,10 @@
+import heapq
 from collections import defaultdict
 
-from ..backend.storage_backend_interface import StorageBackend
-from schema.memory_schema import Memory
-
 import numpy as np
-import heapq
+
+from ..backend.storage_backend_interface import StorageBackend
+from ..schema.memory_schema import Memory
 
 
 class InMemoryBackend(StorageBackend):
@@ -15,7 +15,9 @@ class InMemoryBackend(StorageBackend):
         # namespace to id mapping
         self._by_namespace: dict[str, set[str]] = defaultdict(set)
 
-    def search(self, namespace:str, vector:list[float], metadata:dict, top_k:int = 50) -> list[Memory]:
+    def search(
+        self, namespace: str, vector: list[float], metadata: dict, top_k: int = 50
+    ) -> list[Memory]:
         id_in_namespace = list(self._by_namespace.get(namespace, set()))
         candidates = [self._data[i] for i in id_in_namespace]
         if metadata:
@@ -33,12 +35,12 @@ class InMemoryBackend(StorageBackend):
 
         cosine_similarity_scores = matrix_unit @ query_unit
 
-        top = heapq.nlargest(top_k, zip(cosine_similarity_scores, candidates), key= lambda pair: pair[0])
+        top = heapq.nlargest(
+            top_k, zip(cosine_similarity_scores, candidates), key=lambda pair: pair[0]
+        )
         return [memory for _, memory in top]
 
-
-        
-    def get_memory_by_id(self, namespace:str, id: str) -> Memory|None:
+    def get_memory_by_id(self, namespace: str, id: str) -> Memory | None:
         found_ids = self._by_namespace.get(namespace, set())
         if id in found_ids:
             return self._data[id]
@@ -47,11 +49,11 @@ class InMemoryBackend(StorageBackend):
         self._by_namespace[memory.namespace].add(memory.id)
         self._data[memory.id] = memory
 
-    def delete(self, namespace:str,  id: str):
+    def delete(self, namespace: str, id: str):
         found_ids = self._by_namespace[namespace]
         if id in found_ids:
             self._by_namespace[namespace].remove(id)
             del self._data[id]
 
-    def _matches_metadata(self, memory: Memory, metadata:dict):
+    def _matches_metadata(self, memory: Memory, metadata: dict):
         return all(memory.metadata.get(k) == v for k, v in metadata.items())
