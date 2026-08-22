@@ -10,7 +10,7 @@ That said, it's not built just for coding agents. It's a general memory layer th
 
 ## Architecture
 
-![architecture diagram](artifacts/v0.1-architecture-diagram.png)
+![architecture diagram](https://raw.githubusercontent.com/Indira-kumar/mem-alive/main/packages/mem-alive/artifacts/v0.1-architecture-diagram.png)
 
 One `Memory` client fronts three stores, each backed by the same pluggable `StorageBackend` and `EmbeddingProvider`.
 
