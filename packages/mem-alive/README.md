@@ -54,10 +54,13 @@ The package includes an agentic RAG eval harness with semantic, episodic, and pr
 ```bash
 python -m mem_alive.evals \
   --embedding-model embeddinggemma \
-  --chat-model qwen3:14b
+  --chat-model qwen3:14b \
+  --timeout 300
 ```
 
 Each case measures retrieved-context recall, retrieved-context precision, and required answer-term coverage. The command exits non-zero when any case misses its quality thresholds, so it can also serve as a release gate.
+
+The `Memory` facade uses a `0.6` cosine-similarity threshold, calibrated against the live local-model evals. Applications can choose a stricter operating point with `Memory(..., recall_threshold=0.8)` and should validate it against their own model and corpus.
 
 ## Status
 

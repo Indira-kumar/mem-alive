@@ -24,10 +24,26 @@ Run the live local-model eval:
 ```bash
 uv run --package mem-alive python -m mem_alive.evals \
   --embedding-model embeddinggemma \
-  --chat-model qwen3:14b
+  --chat-model qwen3:14b \
+  --timeout 300
 ```
 
 The live command prints a JSON report and exits with status `1` if any case fails.
+
+### Live baseline: 2026-09-19
+
+The first live loop used `embeddinggemma` for retrieval and `glm-4.7-flash:latest` for answer generation. It identified and drove fixes for an embedding request timeout, an over-strict `0.8` recall threshold, and an episodic question whose required timestamp was not requested by the question.
+
+After those fixes, all four cases passed:
+
+| Case | Context recall | Context precision | Answer terms |
+| --- | ---: | ---: | ---: |
+| Semantic production database | 1.0 | 1.0 | 1.0 |
+| Episodic incident recall | 1.0 | 1.0 | 1.0 |
+| Procedural key rotation | 1.0 | 1.0 | 1.0 |
+| Semantic unanswerable query | 1.0 | 1.0 | 1.0 |
+
+The unanswerable case is the guardrail for the lower threshold: its closest stored memory scored `0.317`, remained below the calibrated `0.6` default, and GLM answered that it did not know.
 
 ## LanceDB architecture
 
