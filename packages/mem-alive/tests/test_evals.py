@@ -20,12 +20,15 @@ class ScenarioEmbeddingProvider(EmbeddingProvider):
             "retrospective" in lowered,
             "rotate the api key" in lowered or "secret store" in lowered,
             "local cache" in lowered or "cache directory" in lowered,
+            "customer support" in lowered or "phone number" in lowered,
         )
         return [float(signal) for signal in signals]
 
 
 class ContextChatProvider(ChatProvider):
     async def generate(self, system_prompt: str, user_prompt: str) -> str:
+        if "(no relevant memories)" in user_prompt:
+            return "I do not know."
         return user_prompt
 
 
@@ -45,6 +48,8 @@ async def test_default_evals_cover_and_pass_all_memory_types():
         "episodic",
         "procedural",
     }
+    negative_result = next(result for result in report.results if "unanswerable" in result.name)
+    assert negative_result.retrieved_context == ()
 
 
 async def test_rag_agent_marks_retrieved_memories_as_evidence():
