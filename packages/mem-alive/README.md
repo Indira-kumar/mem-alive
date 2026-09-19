@@ -37,10 +37,33 @@ Semantic writes check for contradictions on every `remember()`: embed the new fa
 
 The backend stays dumb: vector search, metadata filters, CRUD, nothing else. Recency decay, hybrid scoring, and contradiction logic all live above it, in the store layer, so any backend stays swappable.
 
-v0.1 ships with `InMemoryBackend`, zero dependencies, good for development and testing. A `LanceDB` backend (embedded, no server required) is planned as an optional extra (`pip install mem-alive[lancedb]`) for anything that needs to persist across restarts.
+v0.1 ships with `InMemoryBackend`, good for development and testing. `LanceDBBackend` is the persistent, embedded option and is installed separately with `pip install mem-alive[lancedb]`.
+
+```python
+from mem_alive import LanceDBBackend
+
+backend = LanceDBBackend("./data/memories")
+```
+
+LanceDB fixes the embedding dimension when the table is first created. Changing embedding models to one with a different dimension requires a new table or a deliberate migration.
+
+## Evals
+
+The package includes an agentic RAG eval harness with semantic, episodic, and procedural scenarios. It uses Ollama for both local embeddings and answer generation:
+
+```bash
+python -m mem_alive.evals \
+  --embedding-model embeddinggemma \
+  --chat-model qwen3:14b \
+  --timeout 300
+```
+
+Each case measures retrieved-context recall, retrieved-context precision, and required answer-term coverage. The command exits non-zero when any case misses its quality thresholds, so it can also serve as a release gate.
+
+The `Memory` facade uses a `0.6` cosine-similarity threshold, calibrated against the live local-model evals. Applications can choose a stricter operating point with `Memory(..., recall_threshold=0.8)` and should validate it against their own model and corpus.
 
 ## Status
 
-v0.1.0. Core is done: all three stores, the in-memory backend, a local embedding provider (Ollama), and the federated `Memory` client, all async, with a test suite covering each module plus the integration path. MIT licensed.
+v0.1.1. Core is done: all three stores, in-memory and LanceDB backends, a local embedding provider (Ollama), the federated `Memory` client, and a local-model eval harness. All I/O paths are async and covered by unit, integration, and eval tests. MIT licensed.
 
-Still open: the LanceDB backend, a coding-agent app layer built on top, and eval/benchmark design.
+Still open: a coding-agent app layer, larger benchmark datasets, latency baselines, and token-savings measurements.

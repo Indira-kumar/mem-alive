@@ -1,17 +1,22 @@
 from mem_alive.schema.memory_schema import Memory, SearchResult
 
 
-def make_memory(**overrides):
-    defaults = dict(
-        id="id-1",
-        content="hello world",
-        vector=[0.1, 0.2],
-        metadata={},
-        memory_type="semantic",
-        namespace="ns",
+def make_memory(
+    id: str = "id-1",
+    content: str = "hello world",
+    vector: list[float] | None = None,
+    metadata: dict | None = None,
+    memory_type: str = "semantic",
+    namespace: str = "ns",
+) -> Memory:
+    return Memory(
+        id=id,
+        content=content,
+        vector=vector or [0.1, 0.2],
+        metadata=metadata or {},
+        memory_type=memory_type,
+        namespace=namespace,
     )
-    defaults.update(overrides)
-    return Memory(**defaults)
 
 
 def test_memory_defaults():

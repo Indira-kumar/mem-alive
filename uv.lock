@@ -170,7 +170,7 @@ wheels = [
 
 [[package]]
 name = "mem-alive"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "packages/mem-alive" }
 dependencies = [
     { name = "httpx" },
@@ -186,7 +186,7 @@ lancedb = [
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "lancedb", marker = "extra == 'lancedb'" },
+    { name = "lancedb", marker = "extra == 'lancedb'", specifier = ">=0.37.1" },
     { name = "numpy", specifier = ">=2.4.6" },
 ]
 provides-extras = ["lancedb"]

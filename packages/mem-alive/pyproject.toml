@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-lancedb = ["lancedb"]
+lancedb = ["lancedb>=0.37.1"]
 
 [project.urls]
 Homepage = "https://github.com/Indira-kumar/mem-alive"

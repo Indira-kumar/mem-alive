@@ -10,8 +10,10 @@ class Store(ABC):
         self,
         embedding_provider: EmbeddingProvider,
         db: StorageBackend,
-        recall_threshold: float = 0.8,
+        recall_threshold: float = 0.6,
     ):
+        if not -1.0 <= recall_threshold <= 1.0:
+            raise ValueError("recall_threshold must be between -1 and 1")
         self._embedding_provider = embedding_provider
         self._db = db
         self._recall_threshold = recall_threshold

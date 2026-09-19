@@ -14,7 +14,7 @@ class SemanticStore(Store):
         embedding_provider: EmbeddingProvider,
         db: StorageBackend,
         top_k: int = 100,
-        recall_threshold: float = 0.8,
+        recall_threshold: float = 0.6,
         contradiction_threshold: float = 0.8,
         contradiction_check_k: int = 5,
     ):

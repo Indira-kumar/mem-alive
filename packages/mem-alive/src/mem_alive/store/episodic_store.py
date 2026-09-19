@@ -13,7 +13,7 @@ class EpisodicStore(Store):
         embedding_provider: EmbeddingProvider,
         db: StorageBackend,
         over_fetch_k: int = 100,
-        recall_threshold: float = 0.8,
+        recall_threshold: float = 0.6,
         half_life_hours: float = 36,
     ):
         super().__init__(

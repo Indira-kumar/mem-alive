@@ -1,4 +1,6 @@
+import pytest
 from mem_alive.core.memory import Memory
+from mem_alive.embedding.embedding_provider import EmbeddingProvider
 
 VOCAB = [
     "deploy",
@@ -12,6 +14,15 @@ VOCAB = [
     "weather",
     "today",
 ]
+
+
+class CalibratedEmbeddingProvider(EmbeddingProvider):
+    async def embed(self, texts: list[str]) -> list[list[float]]:
+        vectors = {
+            "stored memory": [1.0, 0.0],
+            "related query": [0.65, 0.759934],
+        }
+        return [vectors[text] for text in texts]
 
 
 def make_client(backend, provider_factory):
@@ -58,3 +69,45 @@ async def test_federated_recall_excludes_unrelated_memories(backend, make_embedd
     results = await client.recall(namespace="ns", search_query="weather today", metadata={})
 
     assert results == []
+
+
+async def test_default_threshold_recalls_moderately_similar_memory(backend):
+    client = Memory(embedding_provider=CalibratedEmbeddingProvider(), db=backend)
+
+    for memory_type in ("semantic", "episodic", "procedural"):
+        namespace = f"ns-{memory_type}"
+        await client.remember(memory_type, namespace, "stored memory", {})
+        results = await client.recall(
+            namespace=namespace,
+            search_query="related query",
+            memory_type=memory_type,
+            metadata={},
+        )
+        assert [memory.content for memory in results] == ["stored memory"]
+
+
+async def test_memory_client_accepts_stricter_recall_threshold(backend):
+    client = Memory(
+        embedding_provider=CalibratedEmbeddingProvider(),
+        db=backend,
+        recall_threshold=0.8,
+    )
+    await client.remember("semantic", "ns", "stored memory", {})
+
+    results = await client.recall(
+        namespace="ns",
+        search_query="related query",
+        memory_type="semantic",
+        metadata={},
+    )
+
+    assert results == []
+
+
+def test_memory_client_rejects_invalid_recall_threshold(backend):
+    with pytest.raises(ValueError, match="recall_threshold must be between -1 and 1"):
+        Memory(
+            embedding_provider=CalibratedEmbeddingProvider(),
+            db=backend,
+            recall_threshold=1.1,
+        )
