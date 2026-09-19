@@ -37,17 +37,33 @@ Semantic writes check for contradictions on every `remember()`: embed the new fa
 
 The backend stays dumb: vector search, metadata filters, CRUD, nothing else. Recency decay, hybrid scoring, and contradiction logic all live above it, in the store layer, so any backend stays swappable.
 
-v0.1 ships with `InMemoryBackend`, zero dependencies, good for development and testing. A `LanceDB` backend (embedded, no server required) is planned as an optional extra (`pip install mem-alive[lancedb]`) for anything that needs to persist across restarts.
+v0.1 ships with `InMemoryBackend`, good for development and testing. `LanceDBBackend` is the persistent, embedded option and is installed separately with `pip install mem-alive[lancedb]`.
+
+```python
+from mem_alive import LanceDBBackend
+
+backend = LanceDBBackend("./data/memories")
+```
+
+LanceDB fixes the embedding dimension when the table is first created. Changing embedding models to one with a different dimension requires a new table or a deliberate migration.
+
+## Evals
+
+The package includes an agentic RAG eval harness with semantic, episodic, and procedural scenarios. It uses Ollama for both local embeddings and answer generation:
+
+```bash
+python -m mem_alive.evals \
+  --embedding-model embeddinggemma \
+  --chat-model qwen3:14b
+```
+
+Each case measures retrieved-context recall, retrieved-context precision, and required answer-term coverage. The command exits non-zero when any case misses its quality thresholds, so it can also serve as a release gate.
 
 ## Status
 
-## Status
-
-v0.1.1. Core is done: all three stores, the in-memory backend, a local embedding provider (Ollama), and the federated `Memory` client, all async, with a test suite covering each module plus the integration path.
-MIT licensed.
+v0.1.1. Core is done: all three stores, in-memory and LanceDB backends, a local embedding provider (Ollama), the federated `Memory` client, and a local-model eval harness. All I/O paths are async and covered by unit, integration, and eval tests. MIT licensed.
 
 Not built yet, and why:
 
-- **LanceDB backend.** `InMemoryBackend` shipped first because the `StorageBackend` interface needed a second implementation before I trusted it, and I wanted the store-layer logic settled before committing to a persistence format. The `lancedb` extra is reserved and currently a no-op.
 - **Coding-agent app layer.** The flagship use case in the Why section is a consumer of this library, not part of it. Keeping it out of the core is deliberate.
-- **Evals.** The token argument at the top is currently an argument. Measuring it is next.
+- **Large benchmark datasets.** The eval contract and local runner now exist; broader retrieval datasets, latency baselines, and token-savings measurements are the next quality step.
