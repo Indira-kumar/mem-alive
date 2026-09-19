@@ -65,15 +65,14 @@ class LanceDBBackend(StorageBackend):
         async with self._write_lock:
             table = await self._get_table()
             if table is None:
-                table = await self._create_table(row, len(memory.vector))
-            else:
-                await self._validate_vector_size(table, len(memory.vector))
-                operation = (
-                    table.merge_insert(["namespace", "id"])
-                    .when_matched_update_all()
-                    .when_not_matched_insert_all()
-                )
-                await operation.execute([row])
+                table = await self._create_table(len(memory.vector))
+            await self._validate_vector_size(table, len(memory.vector))
+            operation = (
+                table.merge_insert(["namespace", "id"])
+                .when_matched_update_all()
+                .when_not_matched_insert_all()
+            )
+            await operation.execute([row])
 
     async def delete(self, namespace: str, id: str) -> None:
         async with self._write_lock:
@@ -121,7 +120,7 @@ class LanceDBBackend(StorageBackend):
             self._table = await connection.open_table(self._table_name)
         return self._table
 
-    async def _create_table(self, row: dict, vector_size: int):
+    async def _create_table(self, vector_size: int):
         import pyarrow as pa
 
         schema = pa.schema(
@@ -138,9 +137,7 @@ class LanceDBBackend(StorageBackend):
             ]
         )
         connection = await self._get_connection()
-        self._table = await connection.create_table(
-            self._table_name, data=[row], schema=schema, exist_ok=True
-        )
+        self._table = await connection.create_table(self._table_name, schema=schema, exist_ok=True)
         return self._table
 
     @staticmethod

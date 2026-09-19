@@ -22,7 +22,7 @@ class ScenarioEmbeddingProvider(EmbeddingProvider):
             "local cache" in lowered or "cache directory" in lowered,
             "customer support" in lowered or "phone number" in lowered,
         )
-        return [float(signal) for signal in signals]
+        return [float(signal) for signal in signals] + [float(not any(signals))]
 
 
 class ContextChatProvider(ChatProvider):
@@ -52,22 +52,32 @@ async def test_default_evals_cover_and_pass_all_memory_types():
     assert negative_result.retrieved_context == ()
 
 
+def test_default_eval_cases_include_background_noise():
+    for case in default_cases():
+        same_type_memories = [
+            memory for memory in case.memories if memory.memory_type == case.memory_type
+        ]
+        assert len(case.memories) >= 12
+        assert len(same_type_memories) >= 4
+        for expected in case.expected_context:
+            contents = [memory.content for memory in case.memories]
+            assert expected in contents[1:-1]
+
+
 async def test_rag_agent_marks_retrieved_memories_as_evidence():
     backend = InMemoryBackend()
     memory = Memory(embedding_provider=ScenarioEmbeddingProvider(), db=backend)
     chat = ContextChatProvider()
     agent = RagAgent(memory=memory, chat_provider=chat)
-    await memory.remember(
-        memory_type="semantic",
-        namespace="ns",
-        fact="The production database is PostgreSQL.",
-        metadata={},
-    )
+    case = default_cases()[0]
+    for seed in case.memories:
+        await memory.remember(seed.memory_type, "ns", seed.content, seed.metadata)
 
     response = await agent.answer(
         namespace="ns",
-        query="What is the production database?",
-        memory_type="semantic",
+        query=case.query,
+        memory_type=case.memory_type,
+        top_k=case.top_k,
     )
 
     assert response.context[0].content == "The production database is PostgreSQL."

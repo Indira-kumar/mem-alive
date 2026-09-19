@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import replace
 
 import pytest
@@ -21,9 +22,7 @@ def make_memory(
         content=content,
         vector=vector if vector is not None else [1.0, 0.0, 0.0],
         metadata=(
-            metadata
-            if metadata is not None
-            else {"environment": "production", "owner": "platform"}
+            metadata if metadata is not None else {"environment": "production", "owner": "platform"}
         ),
         memory_type=memory_type,
         namespace=namespace,
@@ -76,6 +75,25 @@ async def test_lancedb_persists_across_backend_instances(tmp_path):
 
     assert fetched is not None
     assert fetched.content == "production database postgres"
+
+
+async def test_lancedb_preserves_concurrent_first_writes(tmp_path):
+    uri = tmp_path / "lance"
+    first = LanceDBBackend(uri)
+    second = LanceDBBackend(uri)
+    try:
+        await asyncio.gather(
+            first.upsert(make_memory("first")),
+            second.upsert(make_memory("second")),
+        )
+    finally:
+        await first.aclose()
+        await second.aclose()
+
+    async with LanceDBBackend(uri) as reopened:
+        results = await reopened.search("ns", [1.0, 0.0, 0.0], {}, top_k=10)
+
+    assert {result.memory.id for result in results} == {"first", "second"}
 
 
 async def test_lancedb_rejects_embedding_dimension_changes(tmp_path):

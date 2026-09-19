@@ -11,7 +11,7 @@ The eval path is deliberately separate from the memory stores:
 3. `ChatProvider` generates an answer. `OllamaChatProvider` is the local implementation.
 4. The runner measures exact context recall, context precision, and answer-term coverage.
 
-The built-in benchmark contains one case for every memory policy. Tests run the same cases with deterministic providers, while `python -m mem_alive.evals` uses local Ollama models. This keeps CI repeatable without replacing the live-model quality run.
+The built-in benchmark contains one case for every memory policy. Each target is placed among semantic, episodic, and procedural background memories, including similar hard negatives, so retrieval cannot pass by relying on insertion order or a toy two-record corpus. Tests run the same cases with deterministic providers, while `python -m mem_alive.evals` uses local Ollama models. This keeps CI repeatable without replacing the live-model quality run.
 
 Run the deterministic suite:
 
@@ -43,14 +43,16 @@ After those fixes, all four cases passed:
 | Procedural key rotation | 1.0 | 1.0 | 1.0 |
 | Semantic unanswerable query | 1.0 | 1.0 | 1.0 |
 
-The unanswerable case is the guardrail for the lower threshold: its closest stored memory scored `0.317`, remained below the calibrated `0.6` default, and GLM answered that it did not know.
+The review-strengthened benchmark was rerun on the same date with 12 background memories per case and the target inserted between earlier and later writes. The same `embeddinggemma` and `glm-4.7-flash:latest` models again passed all four cases with `1.0` context recall, context precision, and answer-term coverage; the unanswerable case returned no context.
+
+The unanswerable case is the guardrail for the lower threshold. In the original two-memory baseline, its closest stored memory scored `0.317`, remained below the calibrated `0.6` default, and GLM answered that it did not know. The expanded benchmark preserves that behavior against a broader corpus.
 
 ## LanceDB architecture
 
 `LanceDBBackend` implements the existing `StorageBackend` contract without leaking persistence details into the stores.
 
 - The optional dependency is imported lazily; importing `mem_alive` still works without the extra.
-- The table is created on the first write because the embedding dimension is only known then.
+- The table schema is created on the first write because the embedding dimension is only known then. The row is always written through the merge-insert path so concurrent backend instances cannot silently lose the first competing write.
 - `namespace` and `id` form the upsert identity.
 - Metadata is stored as canonical JSON, retaining arbitrary JSON-compatible dictionaries.
 - Namespace filtering is pushed into LanceDB. Metadata subset matching is applied over the namespace's distance-ranked candidates to preserve the in-memory backend's exact semantics.
