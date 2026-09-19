@@ -8,10 +8,11 @@ class LocalEmbeddingProvider(EmbeddingProvider):
         self,
         base_url: str = "http://localhost:11434",
         model: str = "embeddinggemma",
+        timeout: float = 120.0,
     ):
         self.url = base_url
         self.model = model
-        self.client = httpx.AsyncClient(base_url=self.url)
+        self.client = httpx.AsyncClient(base_url=self.url, timeout=timeout)
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
         response = await self.client.post("/api/embed", json={"model": self.model, "input": texts})

@@ -22,8 +22,6 @@ class EvalCase:
     min_context_precision: float = 1.0
 
     def __post_init__(self) -> None:
-        if not self.expected_context:
-            raise ValueError("expected_context must contain at least one memory")
         if not self.expected_answer_terms:
             raise ValueError("expected_answer_terms must contain at least one term")
         for name, threshold in (

@@ -9,11 +9,28 @@ from ..store.semantic_store import SemanticStore
 
 
 class Memory:
-    def __init__(self, embedding_provider: EmbeddingProvider, db: StorageBackend):
+    def __init__(
+        self,
+        embedding_provider: EmbeddingProvider,
+        db: StorageBackend,
+        recall_threshold: float = 0.6,
+    ):
         self._stores = {
-            "procedural": ProceduralStore(db=db, embedding_provider=embedding_provider),
-            "semantic": SemanticStore(db=db, embedding_provider=embedding_provider),
-            "episodic": EpisodicStore(db=db, embedding_provider=embedding_provider),
+            "procedural": ProceduralStore(
+                db=db,
+                embedding_provider=embedding_provider,
+                recall_threshold=recall_threshold,
+            ),
+            "semantic": SemanticStore(
+                db=db,
+                embedding_provider=embedding_provider,
+                recall_threshold=recall_threshold,
+            ),
+            "episodic": EpisodicStore(
+                db=db,
+                embedding_provider=embedding_provider,
+                recall_threshold=recall_threshold,
+            ),
         }
 
     async def recall(

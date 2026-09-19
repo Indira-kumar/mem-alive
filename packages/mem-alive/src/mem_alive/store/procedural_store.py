@@ -12,7 +12,7 @@ class ProceduralStore(Store):
         embedding_provider: EmbeddingProvider,
         db: StorageBackend,
         over_fetch_k: int = 100,
-        recall_threshold: float = 0.8,
+        recall_threshold: float = 0.6,
         keyword_weight: float = 0.5,
     ):
         super().__init__(

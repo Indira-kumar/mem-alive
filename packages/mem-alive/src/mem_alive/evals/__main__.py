@@ -17,14 +17,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", default="http://localhost:11434")
     parser.add_argument("--embedding-model", default="embeddinggemma")
     parser.add_argument("--chat-model", default="qwen3:14b")
+    parser.add_argument("--timeout", type=float, default=300.0)
     return parser.parse_args()
 
 
 async def run(args: argparse.Namespace) -> int:
     backend = InMemoryBackend()
     async with (
-        LocalEmbeddingProvider(base_url=args.base_url, model=args.embedding_model) as embeddings,
-        OllamaChatProvider(base_url=args.base_url, model=args.chat_model) as chat,
+        LocalEmbeddingProvider(
+            base_url=args.base_url,
+            model=args.embedding_model,
+            timeout=args.timeout,
+        ) as embeddings,
+        OllamaChatProvider(
+            base_url=args.base_url,
+            model=args.chat_model,
+            timeout=args.timeout,
+        ) as chat,
     ):
         memory = Memory(embedding_provider=embeddings, db=backend)
         agent = RagAgent(memory=memory, chat_provider=chat)

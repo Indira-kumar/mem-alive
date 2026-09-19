@@ -36,8 +36,12 @@ class EvalRunner:
         )
         retrieved = tuple(memory.content for memory in response.context)
         relevant = case.expected_context.intersection(retrieved)
-        context_recall = len(relevant) / len(case.expected_context)
-        context_precision = len(relevant) / len(retrieved) if retrieved else 0.0
+        if case.expected_context:
+            context_recall = len(relevant) / len(case.expected_context)
+            context_precision = len(relevant) / len(retrieved) if retrieved else 0.0
+        else:
+            context_recall = float(not retrieved)
+            context_precision = float(not retrieved)
         answer = response.answer.casefold()
         terms_found = sum(term.casefold() in answer for term in case.expected_answer_terms)
         answer_terms_found = terms_found / len(case.expected_answer_terms)

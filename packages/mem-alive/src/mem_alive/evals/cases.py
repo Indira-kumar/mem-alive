@@ -25,7 +25,7 @@ def default_cases() -> tuple[EvalCase, ...]:
                 ),
                 MemorySeed("episodic", "The release retrospective happened on Friday."),
             ),
-            query="What happened during incident INC-42?",
+            query="What happened during incident INC-42, and when?",
             expected_context=frozenset(
                 {"During incident INC-42, the cache was restarted at 14:30 UTC."}
             ),
@@ -53,6 +53,18 @@ def default_cases() -> tuple[EvalCase, ...]:
                 }
             ),
             expected_answer_terms=frozenset({"secret store", "restart", "health checks"}),
+            top_k=1,
+        ),
+        EvalCase(
+            name="semantic-unanswerable-query",
+            memory_type="semantic",
+            memories=(
+                MemorySeed("semantic", "The production database is PostgreSQL."),
+                MemorySeed("semantic", "The deployment region is ap-south-1."),
+            ),
+            query="What is the customer support phone number?",
+            expected_context=frozenset(),
+            expected_answer_terms=frozenset({"do not know"}),
             top_k=1,
         ),
     )
