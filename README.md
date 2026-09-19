@@ -1,5 +1,7 @@
 # mem-alive
 
+[![PyPI](https://img.shields.io/pypi/v/mem-alive)](https://pypi.org/project/mem-alive/)
+
 A memory layer for AI agents. Semantic, episodic, and procedural memory, built as a Python package.
 
 ## Why
