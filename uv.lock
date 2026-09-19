@@ -170,7 +170,7 @@ wheels = [
 
 [[package]]
 name = "mem-alive"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "packages/mem-alive" }
 dependencies = [
     { name = "httpx" },
