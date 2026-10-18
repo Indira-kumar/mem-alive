@@ -5,6 +5,7 @@ These evals are the executable starting point for the [product contract](../docs
 | Layer | Corpus | Runner | Current status |
 | --- | --- | --- | --- |
 | Current-client core probes | Seven deterministic scenarios in `core.py` | `python -m evals.core` | Runs against `Memory` today. Five pass; two expose product gaps. |
+| Source/evidence ledger | Replay, restart, and provenance in `evidence.py` | `python -m evals.evidence` | Runs against `SQLiteEvidenceLedger`. |
 | Future core contracts | Eleven event/evidence/state scenarios in `core_contracts.json` | `python -m evals.contracts RESULTS.json` | Scorer is ready; ingestion, evidence, inspect, and forget APIs do not exist yet. |
 | Retrieval quality | Seven held-out queries in `retrieval_cases.json` | `python -m evals.retrieval RESULTS.json` | Scorer is ready; a scoped retrieval adapter is needed. |
 | Coding agent outcome | Eight paired fresh-session scenarios in `coding_cases.json` | `python -m evals.coding RESULTS.json` | Scorer is ready; coding and host adapters plus task oracles are needed. |

@@ -16,6 +16,10 @@ That said, it's not built just for coding agents. It's a general memory layer th
 
 One `Memory` client fronts three stores, each backed by the same pluggable `StorageBackend` and `EmbeddingProvider`.
 
+## Source and evidence ledger
+
+`SQLiteEvidenceLedger` is the first durable core component. It records source events and the evidence selected from them with namespace isolation, stable IDs, and replay-safe writes. It is not yet connected to the `Memory` client's ingestion or recall path. See the [ledger design](../../docs/architecture/evidence-ledger.md).
+
 ## Three kinds of memory
 
 - **Semantic** - durable facts, no recency weighting. New facts can supersede old, similar ones.
