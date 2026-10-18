@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from ..backend.storage_backend_interface import StorageBackend
 from ..embedding.embedding_provider import EmbeddingProvider
-from ..schema.memory_schema import Memory
+from ..schema.memory_schema import Memory, SearchResult
 
 
 class Store(ABC):
@@ -10,7 +10,7 @@ class Store(ABC):
         self,
         embedding_provider: EmbeddingProvider,
         db: StorageBackend,
-        recall_threshold: float = 0.8,
+        recall_threshold: float = 0.7,
     ):
         self._embedding_provider = embedding_provider
         self._db = db
@@ -23,5 +23,11 @@ class Store(ABC):
         pass
 
     @abstractmethod
-    async def remember(self, namespace: str, fact: str, metadata: dict) -> None:
+    async def recall_scored(
+        self, namespace: str, search_query: str, metadata: dict, top_k: int | None = None
+    ) -> list[SearchResult]:
+        pass
+
+    @abstractmethod
+    async def remember(self, namespace: str, fact: str, metadata: dict) -> Memory:
         pass

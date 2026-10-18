@@ -19,3 +19,10 @@ class Memory:
 class SearchResult:
     memory: Memory
     score: float
+
+
+@dataclass
+class MemoryEvent:
+    action: str
+    memory: Memory
+    occurred_at: datetime

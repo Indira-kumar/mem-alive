@@ -44,9 +44,9 @@ Every feature needs at least one eval that measures its intended user-visible qu
 Run focused checks while iterating. Before promotion, run the complete applicable gates from the repository root:
 
 ```bash
-UV_CACHE_DIR=/tmp/mem-alive-uv-cache uv run --package mem-alive --extra lancedb --group dev pytest -q
-UV_CACHE_DIR=/tmp/mem-alive-uv-cache uv run --package mem-alive --extra lancedb --group dev ruff check .
-UV_CACHE_DIR=/tmp/mem-alive-uv-cache uv run --package mem-alive --extra lancedb --group dev ty check
+UV_CACHE_DIR=/tmp/mem-alive-uv-cache uv run --package mem-alive --extra pageindex --group dev pytest -q
+UV_CACHE_DIR=/tmp/mem-alive-uv-cache uv run --package mem-alive --extra pageindex --group dev ruff check .
+UV_CACHE_DIR=/tmp/mem-alive-uv-cache uv run --package mem-alive --extra pageindex --group dev ty check
 ```
 
 Also run the package build for packaging, dependency, or public-surface changes:

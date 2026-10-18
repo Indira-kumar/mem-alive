@@ -1,8 +1,8 @@
 from mem_alive.schema.memory_schema import Memory, SearchResult
 
 
-def make_memory(**overrides):
-    defaults = dict(
+def make_memory():
+    return Memory(
         id="id-1",
         content="hello world",
         vector=[0.1, 0.2],
@@ -10,8 +10,6 @@ def make_memory(**overrides):
         memory_type="semantic",
         namespace="ns",
     )
-    defaults.update(overrides)
-    return Memory(**defaults)
 
 
 def test_memory_defaults():

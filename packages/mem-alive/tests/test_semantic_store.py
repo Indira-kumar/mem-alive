@@ -30,8 +30,8 @@ async def test_recall_filters_out_unrelated_memories(backend, make_embedding_pro
     assert results == []
 
 
-async def test_remember_supersedes_contradicting_fact(backend, make_embedding_provider):
-    store = make_store(backend, make_embedding_provider, contradiction_threshold=0.8)
+async def test_similar_facts_remain_visible(backend, make_embedding_provider):
+    store = make_store(backend, make_embedding_provider)
     await store.remember(namespace="ns", fact="the capital of france is paris", metadata={})
     await store.remember(namespace="ns", fact="the capital of france is lyon", metadata={})
 
@@ -39,9 +39,10 @@ async def test_remember_supersedes_contradicting_fact(backend, make_embedding_pr
         namespace="ns", search_query="the capital of france is paris", metadata={}
     )
 
-    # the old (paris) fact should be superseded, only the new (lyon) one comes back
-    assert len(results) == 1
-    assert results[0].content == "the capital of france is lyon"
+    assert {result.content for result in results} == {
+        "the capital of france is paris",
+        "the capital of france is lyon",
+    }
 
 
 async def test_recall_excludes_other_memory_types(backend, make_embedding_provider):
@@ -69,7 +70,7 @@ async def test_recall_excludes_other_memory_types(backend, make_embedding_provid
 
 async def test_remember_does_not_supersede_other_memory_types(backend, make_embedding_provider):
     provider = make_embedding_provider(VOCAB)
-    store = SemanticStore(embedding_provider=provider, db=backend, contradiction_threshold=0.5)
+    store = SemanticStore(embedding_provider=provider, db=backend)
     vector = (await provider.embed(["the capital of france is paris"]))[0]
 
     episodic_memory = Memory(
@@ -89,9 +90,7 @@ async def test_remember_does_not_supersede_other_memory_types(backend, make_embe
 
 
 async def test_recall_respects_top_k(backend, make_embedding_provider):
-    store = make_store(
-        backend, make_embedding_provider, contradiction_threshold=1.1
-    )  # disable supersession
+    store = make_store(backend, make_embedding_provider)
     await store.remember(namespace="ns", fact="the capital of france is paris", metadata={})
     await store.remember(namespace="ns", fact="the capital of france is lyon", metadata={})
 
@@ -100,3 +99,25 @@ async def test_recall_respects_top_k(backend, make_embedding_provider):
     )
 
     assert len(results) == 1
+
+
+async def test_other_memory_types_cannot_crowd_out_semantic_candidates(
+    backend, make_embedding_provider
+):
+    provider = make_embedding_provider(VOCAB)
+    store = SemanticStore(provider, backend)
+    target = await store.remember("ns", "the capital of france is paris", {})
+    vector = target.vector
+    for index in range(105):
+        await backend.upsert(
+            Memory(
+                id=f"episode-{index}",
+                content="the capital of france is paris",
+                vector=vector,
+                metadata={},
+                memory_type="episodic",
+                namespace="ns",
+            )
+        )
+
+    assert [m.id for m in await store.recall("ns", target.content, {})] == [target.id]

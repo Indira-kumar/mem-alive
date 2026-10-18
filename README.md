@@ -12,13 +12,13 @@ That said, it's not built just for coding agents. It's a general memory layer th
 
 ## Architecture
 
-![architecture diagram](packages/mem-alive/artifacts/v0.1-architecture-diagram.png)
+![v0.1 architecture diagram](packages/mem-alive/artifacts/v0.1-architecture-diagram.png)
 
-One `Memory` client fronts three stores, each backed by the same pluggable `StorageBackend` and `EmbeddingProvider`.
+The diagram shows the v0.1 baseline. One `Memory` client fronts three stores, each backed by the same pluggable `StorageBackend` and `EmbeddingProvider`. The v1 candidate adds separate ingestion and document paths, described in [v1 architecture](docs/v1-architecture.md).
 
 ## Three kinds of memory
 
-- **Semantic** - durable facts, no recency weighting. New facts can supersede old, similar ones.
+- **Semantic** - durable facts, no recency weighting. Corrections update a record by ID.
 - **Episodic** - specific past events, timestamped, recency-weighted (exponential half-life decay), never merged.
 - **Procedural** - skills and workflows, retrieved by hybrid search (embedding similarity + keyword overlap).
 
@@ -29,25 +29,59 @@ Each type has its own store with its own retrieval logic, but all three share on
 - `namespace` - hard partition, never crossed. Means whatever the caller wants (agent, repo, tenant).
 - `metadata` - flexible filters within a namespace (session id, tags, etc).
 
-## Contradictions
+## Corrections
 
-Semantic writes check for contradictions on every `remember()`: embed the new fact, search for similar existing facts in the same namespace, and if similarity crosses a threshold, mark the old fact as superseded. v0.1 uses a similarity threshold for this. A smarter LLM-arbiter version (duplicate vs contradiction vs refinement) is a future upgrade, not required for the first release.
+Vector similarity does not prove contradiction. `remember()` preserves both similar facts; use `update(namespace, memory_id, fact)` when a known record needs correction. Add, update, and delete operations have inspectable history. Conversation extraction is available through `ingest`; automatic contradiction decisions are not implemented yet.
 
 ## Storage
 
 The backend stays dumb: vector search, metadata filters, CRUD, nothing else. Recency decay, hybrid scoring, and contradiction logic all live above it, in the store layer, so any backend stays swappable.
 
-v0.1 ships with `InMemoryBackend`, zero dependencies, good for development and testing. A `LanceDB` backend (embedded, no server required) is planned as an optional extra (`pip install mem-alive[lancedb]`) for anything that needs to persist across restarts.
+`InMemoryBackend` is useful for development and tests. `SQLiteBackend` persists records and their history, supports namespace-scoped browsing and exact vector search, and can create a consistent backup. Its search scans one namespace, so it is intended for personal-sized collections.
+
+## Local use
+
+Run Ollama with the `embeddinggemma` model, then:
+
+```python
+import asyncio
+from pathlib import Path
+
+from mem_alive import LocalEmbeddingProvider, Memory, SQLiteBackend
+
+
+async def main():
+    db = SQLiteBackend(Path.home() / ".local/share/mem-alive/memory.db")
+    async with LocalEmbeddingProvider() as embedder:
+        memory = Memory(embedder, db)
+        saved = await memory.remember("semantic", "personal", "I prefer Python", {"source": "me"})
+        hits = await memory.recall_hits("personal", "Python preference", {})
+        await memory.update("personal", saved.id, "I prefer Rust")
+        print(hits)
+
+
+asyncio.run(main())
+```
+
+`get`, `list`, `history`, `delete`, and `forget` provide the rest of the record lifecycle. `delete` preserves audit history; `forget` purges the record and its local history. `SQLiteBackend.backup(path)` writes a new, consistent backup file; it refuses to overwrite an existing file. Keep the database and backup path private because neither is encrypted.
+
+## Use from an agent
+
+The `mem-alive` command prints JSON so an agent can call it across sessions. A namespace is required for every command:
+
+```bash
+mem-alive --namespace personal remember semantic "I prefer Python"
+mem-alive --namespace personal recall "What language do I prefer?"
+printf '[{"role":"user","content":"I prefer dark mode in coding tools."}]' \
+  | mem-alive --namespace personal ingest
+mem-alive --namespace personal list
+mem-alive --namespace personal backup ~/memory-backup.db
+```
+
+The CLI uses local Ollama models `embeddinggemma` and `llama3.2` by default. `MEM_ALIVE_DB` selects the SQLite file; otherwise it uses `$XDG_DATA_HOME/mem-alive/memory.db` or `~/.local/share/mem-alive/memory.db`. Conversation ingestion records source message indices and hashes by default. Pass `ingest --store-source-text` only when retaining the original user text is necessary.
+
+With `pip install mem-alive[pageindex]`, `index-pdf`, `ask-doc`, `list-docs`, and `forget-doc` use PageIndex's local text-PDF mode. Documents are stored under a directory scoped to the namespace. The adapter requires a PageIndex page citation or a unique source-text match for an uncited numeric answer. Scanned PDFs need PageIndex Cloud or another OCR step.
 
 ## Status
 
-## Status
-
-v0.1.1. Core is done: all three stores, the in-memory backend, a local embedding provider (Ollama), and the federated `Memory` client, all async, with a test suite covering each module plus the integration path.
-MIT licensed.
-
-Not built yet, and why:
-
-- **LanceDB backend.** `InMemoryBackend` shipped first because the `StorageBackend` interface needed a second implementation before I trusted it, and I wanted the store-layer logic settled before committing to a persistence format. The `lancedb` extra is reserved and currently a no-op.
-- **Coding-agent app layer.** The flagship use case in the Why section is a consumer of this library, not part of it. Keeping it out of the core is deliberate.
-- **Evals.** The token argument at the top is currently an argument. Measuring it is next.
+The published version is 0.1.1. This branch adds local durability, explicit correction, conversation extraction, PageIndex document retrieval, and a CLI. Its small live Ollama evals pass, but broader personal-document and workflow evaluation remain before a v1 claim. See [v1 architecture](docs/v1-architecture.md), [operations](docs/operations.md), and the [agent workflow](docs/agent-workflow.md) for decisions and release gates. MIT licensed.

@@ -15,7 +15,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-lancedb = ["lancedb"]
+pageindex = ["pageindex>=0.4.1,<0.5"]
+
+[project.scripts]
+mem-alive = "mem_alive.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/Indira-kumar/mem-alive"
