@@ -15,7 +15,9 @@ from evals.retrieval import summarize as summarize_retrieval
 
 
 def _gold_contract_run(case: dict) -> dict:
+    """Build a fully linked adapter result to test the scorer in isolation."""
     def make_output(expect: dict) -> dict:
+        """Create concrete evidence IDs from a checkpoint's gold sources."""
         evidence = {}
         records = {}
         for key, gold in expect.get("records", {}).items():
@@ -46,6 +48,7 @@ def _gold_contract_run(case: dict) -> dict:
 
 
 def _gold_coding_runs(case: dict) -> list[dict]:
+    """Make a paired trial with identical agent conditions and oracle results."""
     condition = {
         "model": "test-model",
         "tools_hash": "tools-1",
@@ -71,6 +74,7 @@ def _gold_coding_runs(case: dict) -> list[dict]:
 
 
 def test_core_probe_corpus_and_grader_rejects_wrong_context():
+    """An extra injected memory must fail even when all required facts appear."""
     cases = probes()
     assert {case.category for case in cases} >= {
         "scope",
@@ -92,6 +96,7 @@ def test_core_probe_corpus_and_grader_rejects_wrong_context():
 
 
 async def test_current_core_probe_run_reports_gaps_without_relabeling_them():
+    """Keep existing passes visible while allowing known product gaps to improve."""
     results = await run()
     assert len(results) == len(probes())
     assert all(
@@ -112,6 +117,7 @@ async def test_current_core_probe_run_reports_gaps_without_relabeling_them():
 
 
 def test_core_contracts_cover_product_invariants_and_pass_gold_outputs():
+    """Gold provenance and fixture references must remain internally coherent."""
     cases = load_core_contracts()
     assert len(cases) == 11
     assert all(case["events"] and case["queries"] for case in cases)
@@ -120,6 +126,8 @@ def test_core_contracts_cover_product_invariants_and_pass_gold_outputs():
         query_ids = {query["id"] for query in case["queries"]}
         assert set(case["expect"]["recall"]) <= query_ids
         assert set(case.get("expect_after", {})) <= event_ids
+        if "inspectable" in case["expect"]:
+            assert set(case["expect"]["inspectable"]) == set(case["expect"]["records"])
         for record in case["expect"]["records"].values():
             assert set(record["sources"]) <= event_ids
     assert all(
@@ -128,6 +136,7 @@ def test_core_contracts_cover_product_invariants_and_pass_gold_outputs():
 
 
 def test_core_contract_grader_catches_broken_evidence_chain_and_replay():
+    """Forged source links and duplicate replay state cannot receive a pass."""
     cases = load_core_contracts()
     runs = [_gold_contract_run(case) for case in cases]
     provenance = next(run for run in runs if run["case_id"] == "provenance-chain")
@@ -141,6 +150,7 @@ def test_core_contract_grader_catches_broken_evidence_chain_and_replay():
 
 
 def test_core_contract_grader_catches_early_procedure_promotion():
+    """One observed success is only a candidate, even if later runs succeed."""
     cases = load_core_contracts()
     runs = [_gold_contract_run(case) for case in cases]
     procedure = next(
@@ -155,6 +165,7 @@ def test_core_contract_grader_catches_early_procedure_promotion():
 
 
 def test_coding_grader_requires_task_outcome_and_correct_context():
+    """Correct context alone cannot compensate for a failed coding task."""
     cases = load_coding_cases()
     assert len(cases) == 8
     assert all(case["session_a"] and case["session_b_task"] and case["oracle"] for case in cases)
@@ -171,6 +182,7 @@ def test_coding_grader_requires_task_outcome_and_correct_context():
 
 
 def test_coding_grader_catches_stale_context_and_restatements():
+    """A stale decision and repeated user instruction invalidate the run."""
     cases = load_coding_cases()
     runs = [run for case in cases for run in _gold_coding_runs(case)]
     changed = next(
@@ -186,6 +198,7 @@ def test_coding_grader_catches_stale_context_and_restatements():
 
 
 def test_coding_grader_rejects_missing_or_duplicate_pair():
+    """A comparison is undefined without exactly one run per condition."""
     cases = load_coding_cases()
     runs = [run for case in cases for run in _gold_coding_runs(case)]
     with pytest.raises(ValueError, match="missing paired run"):
@@ -194,7 +207,32 @@ def test_coding_grader_rejects_missing_or_duplicate_pair():
         score_coding(cases, runs + [runs[0]])
 
 
+def test_coding_grader_requires_explicit_memory_on_measurements():
+    """Omitted abstention measurements must never default to success."""
+    cases = load_coding_cases()
+    runs = [run for case in cases for run in _gold_coding_runs(case)]
+    target = next(
+        run
+        for run in runs
+        if run["case_id"] == "irrelevant-weak-memory-abstains" and run["mode"] == "on"
+    )
+    assert target["delivered_context"] == []
+    assert target["user_restatements"] == 0
+    assert all(item.passed for item in score_coding(cases, runs))
+    for field in ("delivered_context", "user_restatements"):
+        missing = deepcopy(runs)
+        missing_target = next(
+            run
+            for run in missing
+            if run["case_id"] == "irrelevant-weak-memory-abstains" and run["mode"] == "on"
+        )
+        del missing_target[field]
+        with pytest.raises(ValueError, match="missing memory-on measurements"):
+            score_coding(cases, missing)
+
+
 def test_coding_grader_checks_pair_parity_and_repeated_trials():
+    """Repeated trials are valid only when each pair has matched conditions."""
     cases = load_coding_cases()
     runs = [run for case in cases for run in _gold_coding_runs(case)]
     repeat = deepcopy(runs)
@@ -209,6 +247,7 @@ def test_coding_grader_checks_pair_parity_and_repeated_trials():
 
 
 def test_held_out_retrieval_grader_catches_near_match_and_scope_leak():
+    """Near matches and cross-project context count as wrong memories."""
     cases = load_retrieval_cases()
     assert len(cases) == 7
     assert any(not case["required"] for case in cases)

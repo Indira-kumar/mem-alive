@@ -20,10 +20,12 @@ class ContractScore:
 
 
 def load_cases() -> list[dict]:
-    return json.loads(CASES_PATH.read_text())
+    """Read the implementation-neutral core contract corpus."""
+    return json.loads(CASES_PATH.read_text(encoding="utf-8"))
 
 
 def _compare(expected: dict, observed: dict, prefix: str) -> list[str]:
+    """Compare visible state and trace each memory through evidence to sources."""
     failures = []
     for field in ("recall", "review", "inspectable", "memory_count", "evidence_count"):
         if field not in expected:
@@ -73,6 +75,7 @@ def _compare(expected: dict, observed: dict, prefix: str) -> list[str]:
 
 
 def score(cases: list[dict], runs: list[dict]) -> list[ContractScore]:
+    """Reject missing cases and report each final or intermediate mismatch."""
     expected_ids = {case["id"] for case in cases}
     if len(expected_ids) != len(cases):
         raise ValueError("duplicate contract case ID")
@@ -98,10 +101,11 @@ def score(cases: list[dict], runs: list[dict]) -> list[ContractScore]:
 
 
 def main() -> None:
+    """Score adapter JSON and return a failing status for any broken contract."""
     parser = argparse.ArgumentParser(description="Score normalized core behavior contract runs")
     parser.add_argument("results", type=Path, help="JSON file containing adapter run records")
     args = parser.parse_args()
-    scores = score(load_cases(), json.loads(args.results.read_text())["runs"])
+    scores = score(load_cases(), json.loads(args.results.read_text(encoding="utf-8"))["runs"])
     print(json.dumps({"scores": [asdict(item) for item in scores]}, indent=2))
     raise SystemExit(0 if all(item.passed for item in scores) else 1)
 

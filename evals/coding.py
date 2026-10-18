@@ -30,7 +30,8 @@ class CaseScore:
 
 
 def load_cases() -> list[dict]:
-    return json.loads(CASES_PATH.read_text())
+    """Read the fresh-session corpus with a stable encoding on every platform."""
+    return json.loads(CASES_PATH.read_text(encoding="utf-8"))
 
 
 def score(cases: list[dict], runs: list[dict]) -> list[CaseScore]:
@@ -70,6 +71,7 @@ def score(cases: list[dict], runs: list[dict]) -> list[CaseScore]:
 
 
 def _score_pair(case: dict, trial: str, off: dict, on: dict) -> CaseScore:
+    """Reject incomplete measurements before judging context and task outcome."""
     case_id = case["id"]
     condition = on.get("condition")
     fields = {"model", "tools_hash", "repo_state_hash", "task"}
@@ -83,7 +85,9 @@ def _score_pair(case: dict, trial: str, off: dict, on: dict) -> CaseScore:
         raise ValueError(f"paired conditions differ or omit task setup: {case_id}, trial {trial}")
     if off.get("delivered_context"):
         raise ValueError(f"memory-off run received context: {case_id}")
-    delivered = on.get("delivered_context", [])
+    if "delivered_context" not in on or "user_restatements" not in on:
+        raise ValueError(f"missing memory-on measurements: {case_id}")
+    delivered = on["delivered_context"]
     if len({(item["id"], item["status"]) for item in delivered}) != len(delivered):
         raise ValueError(f"duplicate delivered context: {case_id}")
     supplied = {(item["id"], item["status"]) for item in delivered}
@@ -93,7 +97,7 @@ def _score_pair(case: dict, trial: str, off: dict, on: dict) -> CaseScore:
     missing = required - supplied
     wrong = len(forbidden & supplied)
     unexpected = len(supplied - required - permitted)
-    restatements = on.get("user_restatements", 0)
+    restatements = on["user_restatements"]
     if not isinstance(restatements, int) or isinstance(restatements, bool) or restatements < 0:
         raise ValueError(f"invalid user_restatements: {case_id}")
     regression = off["task_passed"] and not on["task_passed"]
@@ -142,10 +146,11 @@ def summarize(scores: list[CaseScore]) -> dict:
 
 
 def main() -> None:
+    """Print every trial and fail the command when any paired run fails."""
     parser = argparse.ArgumentParser(description="Score paired coding-agent eval runs")
     parser.add_argument("results", type=Path, help="JSON file containing paired run records")
     args = parser.parse_args()
-    scores = score(load_cases(), json.loads(args.results.read_text())["runs"])
+    scores = score(load_cases(), json.loads(args.results.read_text(encoding="utf-8"))["runs"])
     print(
         json.dumps(
             {"scores": [asdict(item) for item in scores], "summary": summarize(scores)}, indent=2

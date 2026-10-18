@@ -26,10 +26,12 @@ class RetrievalScore:
 
 
 def load_cases() -> list[dict]:
-    return json.loads(CASES_PATH.read_text())
+    """Read held-out queries independently of the system under test."""
+    return json.loads(CASES_PATH.read_text(encoding="utf-8"))
 
 
 def score(cases: list[dict], runs: list[dict]) -> list[RetrievalScore]:
+    """Count required, optional, and wrong hits without a numeric cutoff."""
     expected_ids = {case["id"] for case in cases}
     if len(expected_ids) != len(cases):
         raise ValueError("duplicate retrieval case ID")
@@ -97,6 +99,7 @@ def summarize(scores: list[RetrievalScore]) -> dict:
         latencies = sorted(item.latency_ms for item in items)
 
         def percentile(p: float) -> float:
+            """Use the nearest observed rank for small eval corpora."""
             return latencies[math.ceil(p * len(latencies)) - 1]
 
         summary[key] = {
@@ -114,10 +117,11 @@ def summarize(scores: list[RetrievalScore]) -> dict:
 
 
 def main() -> None:
+    """Print per-case and per-scope metrics for adapter results."""
     parser = argparse.ArgumentParser(description="Score held-out retrieval runs")
     parser.add_argument("results", type=Path, help="JSON file containing adapter run records")
     args = parser.parse_args()
-    scores = score(load_cases(), json.loads(args.results.read_text())["runs"])
+    scores = score(load_cases(), json.loads(args.results.read_text(encoding="utf-8"))["runs"])
     print(
         json.dumps(
             {"scores": [asdict(item) for item in scores], "summary": summarize(scores)}, indent=2

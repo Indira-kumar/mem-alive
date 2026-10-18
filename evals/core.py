@@ -55,9 +55,11 @@ class Result:
 
 class FixedEmbedding(EmbeddingProvider):
     def __init__(self, vectors: dict[str, tuple[float, ...]]):
+        """Pin vectors so probes measure memory policy independently of models."""
         self.vectors = vectors
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
+        """Return the fixture vector for each memory or query text."""
         return [list(self.vectors[text]) for text in texts]
 
 
@@ -166,6 +168,7 @@ def probes() -> tuple[Probe, ...]:
 
 
 async def evaluate(probe: Probe) -> Result:
+    """Seed an isolated client and score one public recall call."""
     vectors = {seed.content: seed.vector for seed in probe.seeds}
     vectors[probe.query] = probe.query_vector
     memory = Memory(FixedEmbedding(vectors), InMemoryBackend())
@@ -217,10 +220,12 @@ def score_retrieval(probe: Probe, retrieved: tuple[str, ...]) -> Result:
 
 
 async def run() -> tuple[Result, ...]:
+    """Evaluate every deterministic probe in its own backend."""
     return tuple(await asyncio.gather(*(evaluate(probe) for probe in probes())))
 
 
 def main() -> None:
+    """Print diagnostics, with strict mode available as a product gate."""
     parser = argparse.ArgumentParser(description="Run deterministic memory behavior probes")
     parser.add_argument("--strict", action="store_true", help="fail if a product probe fails")
     args = parser.parse_args()

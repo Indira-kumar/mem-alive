@@ -53,7 +53,7 @@ Core contract run example:
 }
 ```
 
-For a case with `expect_after`, add a normalized state under each named event ID in `after`. The core scorer checks record identity, type, state, recall, review/inspect lists where specified, source provenance, and counts derived from the supplied records and evidence. It does not rely on an adapter's self-reported count.
+For a case with `expect_after`, add a normalized state under each named event ID in `after`. The core scorer checks record identity, type, state, recall, review/inspect lists where specified, source provenance, and counts derived from the supplied records and evidence. `inspectable` means every record available through inspection, including active and superseded records. The scorer does not rely on an adapter's self-reported count.
 
 Retrieval run example:
 
@@ -70,7 +70,7 @@ Coding run example (one pair; the full file needs one pair per case):
 ]}
 ```
 
-`task_passed` must come from the independently executed task oracle. Store the command, exit status, workspace snapshot, and agent trace with the run so reviewers can audit it. A memory-on run that injects the expected fact but makes the task worse fails.
+`task_passed` must come from the independently executed task oracle. Memory-on runs must explicitly provide `delivered_context` and `user_restatements`, including `[]` and `0` when nothing was delivered or restated. Store the command, exit status, workspace snapshot, and agent trace with the run so reviewers can audit it. A memory-on run that injects the expected fact but makes the task worse fails.
 
 ## Baseline and next integration steps
 

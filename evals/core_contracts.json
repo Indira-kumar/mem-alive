@@ -69,7 +69,7 @@
         "primary-db-old": {"type": "semantic", "state": "superseded", "sources": ["e1"]},
         "primary-db-new": {"type": "semantic", "state": "active", "sources": ["e3"]}
       },
-      "inspectable": ["primary-db-old"],
+      "inspectable": ["analytics-db", "primary-db-old", "primary-db-new"],
       "memory_count": 3
     }
   },
