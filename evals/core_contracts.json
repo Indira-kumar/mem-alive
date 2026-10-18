@@ -1,0 +1,181 @@
+[
+  {
+    "id": "provenance-chain",
+    "events": [{"id": "e1", "kind": "user", "text": "The billing service uses PostgreSQL."}],
+    "queries": [{"id": "q1", "text": "Which database backs billing?"}],
+    "expect": {
+      "recall": {"q1": ["billing-db"]},
+      "records": {"billing-db": {"type": "semantic", "state": "active", "sources": ["e1"]}},
+      "memory_count": 1
+    }
+  },
+  {
+    "id": "non-coding-user-preference",
+    "events": [{"id": "e1", "kind": "user", "user": "u1", "text": "When booking travel for me, choose a quiet room away from elevators."}],
+    "queries": [{"id": "q1", "text": "Which kind of hotel room should I request?", "user": "u1"}],
+    "expect": {
+      "recall": {"q1": ["room-preference"]},
+      "records": {"room-preference": {"type": "semantic", "state": "active", "sources": ["e1"]}},
+      "memory_count": 1
+    }
+  },
+  {
+    "id": "event-replay-is-idempotent",
+    "events": [
+      {"id": "e1", "kind": "user", "text": "Use blue for status badges."},
+      {"id": "e1", "kind": "user", "text": "Use blue for status badges."}
+    ],
+    "queries": [{"id": "q1", "text": "What color are status badges?"}],
+    "expect": {
+      "recall": {"q1": ["badge-color"]},
+      "records": {"badge-color": {"type": "semantic", "state": "active", "sources": ["e1"]}},
+      "memory_count": 1,
+      "evidence_count": 1
+    }
+  },
+  {
+    "id": "correction-preserves-unrelated-fact",
+    "events": [
+      {"id": "e1", "kind": "user", "text": "The docs site is hosted on Netlify."},
+      {"id": "e2", "kind": "user", "text": "For this project, run mock tests before integration tests."},
+      {"id": "e3", "kind": "user", "text": "Correction: run integration tests first; mocks missed the callback failure."}
+    ],
+    "queries": [
+      {"id": "q1", "text": "How should callbacks be tested?"},
+      {"id": "q2", "text": "Where is the docs site hosted?"}
+    ],
+    "expect": {
+      "recall": {"q1": ["test-preference"], "q2": ["docs-host"]},
+      "records": {
+        "test-preference-old": {"type": "semantic", "state": "superseded", "sources": ["e2"]},
+        "test-preference": {"type": "semantic", "state": "active", "sources": ["e3"]},
+        "docs-host": {"type": "semantic", "state": "active", "sources": ["e1"]}
+      },
+      "memory_count": 3
+    }
+  },
+  {
+    "id": "compatible-versus-contradictory",
+    "events": [
+      {"id": "e1", "kind": "user", "text": "PostgreSQL is the primary database."},
+      {"id": "e2", "kind": "user", "text": "PostgreSQL also backs analytics."},
+      {"id": "e3", "kind": "user", "text": "The primary database has changed to MySQL."}
+    ],
+    "queries": [{"id": "q1", "text": "Where are PostgreSQL and MySQL used now?"}],
+    "expect": {
+      "recall": {"q1": ["analytics-db", "primary-db-new"]},
+      "records": {
+        "analytics-db": {"type": "semantic", "state": "active", "sources": ["e2"]},
+        "primary-db-old": {"type": "semantic", "state": "superseded", "sources": ["e1"]},
+        "primary-db-new": {"type": "semantic", "state": "active", "sources": ["e3"]}
+      },
+      "inspectable": ["analytics-db", "primary-db-old", "primary-db-new"],
+      "memory_count": 3
+    }
+  },
+  {
+    "id": "history-remains-inspectable",
+    "events": [
+      {"id": "e1", "kind": "user", "text": "The deployment region is eu-west-1."},
+      {"id": "e2", "kind": "user", "text": "We moved deployment to ap-south-1."}
+    ],
+    "queries": [{"id": "q1", "text": "Where do we deploy now?"}],
+    "expect": {
+      "recall": {"q1": ["region-current"]},
+      "records": {
+        "region-old": {"type": "semantic", "state": "superseded", "sources": ["e1"]},
+        "region-current": {"type": "semantic", "state": "active", "sources": ["e2"]}
+      },
+      "inspectable": ["region-old", "region-current"],
+      "memory_count": 2
+    }
+  },
+  {
+    "id": "user-and-project-scope",
+    "events": [
+      {"id": "e1", "kind": "user", "user": "u1", "text": "Across my projects, run quick unit tests first."},
+      {"id": "e2", "kind": "user", "user": "u1", "project": "A", "text": "In project A, run integration tests first because mocks miss database faults."}
+    ],
+    "queries": [
+      {"id": "project-a", "text": "How should I test this change?", "user": "u1", "project": "A"},
+      {"id": "project-b", "text": "How should I test this change?", "user": "u1", "project": "B"},
+      {"id": "other-user", "text": "How should I test this change?", "user": "u2", "project": "B"}
+    ],
+    "expect": {
+      "recall": {
+        "project-a": ["project-a-exception"],
+        "project-b": ["user-practice"],
+        "other-user": []
+      },
+      "records": {
+        "user-practice": {"type": "semantic", "state": "active", "sources": ["e1"]},
+        "project-a-exception": {"type": "semantic", "state": "active", "sources": ["e2"]}
+      },
+      "memory_count": 2
+    }
+  },
+  {
+    "id": "procedure-needs-independent-verification",
+    "events": [
+      {"id": "e1", "kind": "agent", "text": "I think restarting the worker fixed the queue."},
+      {"id": "e2", "kind": "tool_result", "text": "First queue recovery check passed after restart.", "attempt": "a1"},
+      {"id": "e3", "kind": "tool_result", "text": "A separate queue recovery check passed after restart.", "attempt": "a2"},
+      {"id": "e4", "kind": "tool_result", "text": "A later restart failed to recover a queue with a full disk.", "attempt": "a3"}
+    ],
+    "queries": [{"id": "q1", "text": "How do I recover a stalled queue?"}],
+    "expect_after": {
+      "e1": {"recall": {"q1": []}},
+      "e2": {
+        "records": {"restart-conditional": {"type": "procedural", "state": "candidate", "sources": ["e2"]}},
+        "memory_count": 1
+      },
+      "e3": {
+        "records": {"restart-conditional": {"type": "procedural", "state": "established", "sources": ["e2", "e3"]}},
+        "memory_count": 1
+      }
+    },
+    "expect": {
+      "recall": {"q1": ["restart-conditional"]},
+      "records": {
+        "restart-conditional": {
+          "type": "procedural", "state": "established", "sources": ["e2", "e3", "e4"]
+        }
+      },
+      "memory_count": 1
+    }
+  },
+  {
+    "id": "episode-keeps-event-and-outcome",
+    "events": [
+      {"id": "e1", "kind": "tool_result", "text": "Migration 18 failed when a non-null constraint preceded backfill."},
+      {"id": "e2", "kind": "tool_result", "text": "Backfill then constraint passed verification for migration 18."}
+    ],
+    "queries": [{"id": "q1", "text": "What happened in migration 18?"}],
+    "expect": {
+      "recall": {"q1": ["migration-18"]},
+      "records": {"migration-18": {"type": "episodic", "state": "active", "sources": ["e1", "e2"]}},
+      "memory_count": 1
+    }
+  },
+  {
+    "id": "weak-claim-enters-review-and-abstains",
+    "events": [{"id": "e1", "kind": "agent", "text": "I assume the project uses Redis; I did not check."}],
+    "queries": [{"id": "q1", "text": "Which cache does the project use?"}],
+    "expect": {
+      "recall": {"q1": []},
+      "records": {"cache-claim": {"type": "semantic", "state": "review", "sources": ["e1"]}},
+      "review": ["cache-claim"],
+      "memory_count": 1
+    }
+  },
+  {
+    "id": "deletion-survives-index-rebuild",
+    "events": [
+      {"id": "e1", "kind": "user", "text": "The access token is abc123."},
+      {"id": "delete-e1", "kind": "forget_source", "source_event_id": "e1"},
+      {"id": "rebuild", "kind": "rebuild_index"}
+    ],
+    "queries": [{"id": "q1", "text": "What is the access token?"}],
+    "expect": {"recall": {"q1": []}, "records": {}, "memory_count": 0, "evidence_count": 0}
+  }
+]

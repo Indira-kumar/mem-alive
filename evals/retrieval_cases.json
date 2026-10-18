@@ -1,0 +1,82 @@
+[
+  {
+    "id": "exact-entity-and-path",
+    "type": "semantic",
+    "scope": "project",
+    "memories": [
+      {"id": "target", "text": "The parser grammar is at src/lang/grammar.py.", "type": "semantic", "project": "A"},
+      {"id": "near-path", "text": "The parser tests are at tests/test_grammar.py.", "type": "semantic", "project": "A"},
+      {"id": "other-project", "text": "The parser grammar is at lib/parse/grammar.ts.", "type": "semantic", "project": "B"}
+    ],
+    "request": {"query": "Where is the language syntax definition?", "project": "A"},
+    "required": ["target"], "optional": [], "forbidden": ["near-path", "other-project"]
+  },
+  {
+    "id": "paraphrased-procedure",
+    "type": "procedural",
+    "scope": "project",
+    "memories": [
+      {"id": "target", "text": "Before changing the schema, backfill existing rows, then add the non-null constraint.", "type": "procedural", "project": "A"},
+      {"id": "distractor", "text": "To update indexes, rebuild the search database after migration.", "type": "procedural", "project": "A"}
+    ],
+    "request": {"query": "How do I safely make this column required?", "project": "A"},
+    "required": ["target"], "optional": [], "forbidden": ["distractor"]
+  },
+  {
+    "id": "two-entity-recall",
+    "type": "semantic",
+    "scope": "project",
+    "memories": [
+      {"id": "api", "text": "The API service uses PostgreSQL.", "type": "semantic", "project": "A"},
+      {"id": "jobs", "text": "The job queue uses Redis.", "type": "semantic", "project": "A"},
+      {"id": "analytics", "text": "Analytics exports to BigQuery.", "type": "semantic", "project": "A"}
+    ],
+    "request": {"query": "Which stores back API traffic and background work?", "project": "A"},
+    "required": ["api", "jobs"], "optional": [], "forbidden": ["analytics"]
+  },
+  {
+    "id": "changed-value",
+    "type": "semantic",
+    "scope": "project",
+    "memories": [
+      {"id": "old", "text": "The deployment region was eu-west-1.", "type": "semantic", "project": "A", "state": "superseded"},
+      {"id": "current", "text": "The deployment region is ap-south-1.", "type": "semantic", "project": "A", "state": "active"}
+    ],
+    "request": {"query": "Where is production deployed now?", "project": "A"},
+    "required": ["current"], "optional": [], "forbidden": ["old"]
+  },
+  {
+    "id": "user-scope-with-project-exception",
+    "type": "semantic",
+    "scope": "user-and-project",
+    "memories": [
+      {"id": "general", "text": "This user runs unit tests before integration tests by default.", "type": "semantic", "user": "u1"},
+      {"id": "exception", "text": "In project A, integration tests run first because mocks miss DB faults.", "type": "semantic", "user": "u1", "project": "A"},
+      {"id": "other-user", "text": "Another user runs only smoke tests.", "type": "semantic", "user": "u2"}
+    ],
+    "request": {"query": "Which tests should I run first?", "user": "u1", "project": "A"},
+    "required": ["exception"], "optional": ["general"], "forbidden": ["other-user"]
+  },
+  {
+    "id": "older-relevant-episode",
+    "type": "episodic",
+    "scope": "project",
+    "memories": [
+      {"id": "target", "text": "Migration 18 failed when the non-null constraint preceded backfill; backfill first passed.", "type": "episodic", "project": "A", "age_days": 60},
+      {"id": "recent", "text": "Yesterday the test runner was upgraded and passed.", "type": "episodic", "project": "A", "age_days": 1}
+    ],
+    "request": {"query": "What happened last time we made a column required?", "project": "A"},
+    "required": ["target"], "optional": [], "forbidden": ["recent"]
+  },
+  {
+    "id": "irrelevant-near-match-abstains",
+    "type": "semantic",
+    "scope": "project",
+    "memories": [
+      {"id": "near", "text": "The support desk uses a ticket portal, but no phone number is recorded.", "type": "semantic", "project": "A"},
+      {"id": "other-project", "text": "Project B support phone number is 555-0100.", "type": "semantic", "project": "B"}
+    ],
+    "request": {"query": "What is project A's support phone number?", "project": "A"},
+    "required": [], "optional": [], "forbidden": ["near", "other-project"]
+  }
+]

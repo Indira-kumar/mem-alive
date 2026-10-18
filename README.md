@@ -46,8 +46,8 @@ v0.1 ships with `InMemoryBackend`, zero dependencies, good for development and t
 v0.1.1. Core is done: all three stores, the in-memory backend, a local embedding provider (Ollama), and the federated `Memory` client, all async, with a test suite covering each module plus the integration path.
 MIT licensed.
 
-Not built yet, and why:
+Remaining work:
 
 - **LanceDB backend.** `InMemoryBackend` shipped first because the `StorageBackend` interface needed a second implementation before I trusted it, and I wanted the store-layer logic settled before committing to a persistence format. The `lancedb` extra is reserved and currently a no-op.
 - **Coding-agent app layer.** The flagship use case in the Why section is a consumer of this library, not part of it. Keeping it out of the core is deliberate.
-- **Evals.** The token argument at the top is currently an argument. Measuring it is next.
+- **Evals.** The [eval corpus and graders](evals/README.md) now cover core behavior, retrieval, and the coding use case. Current-client probes expose two known gaps; live coding-agent measurement still needs adapters.
