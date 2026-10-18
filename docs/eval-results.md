@@ -26,7 +26,7 @@ The command lines are in [operations](operations.md). These tests use fake embed
 
 The JSON CLI passed 7/7 live cross-process checks: recall, correction, history, namespace isolation, backup restore, conversation ingestion, and history purge via `forget`.
 
-Direct PageIndex navigation passed 3/3 live checks on the synthetic PDF: a nonempty section tree and the expected source text on pages 2 and 4. Indexing plus navigation took 5.3 seconds. This gives an agent a route to inspect source pages even when PageIndex chat fails.
+Direct PageIndex navigation passed 3/3 live checks through separate CLI processes on the synthetic PDF: a nonempty section tree and the expected source text on pages 2 and 4. Indexing plus navigation took 6.0 seconds. This gives an agent a route to inspect source pages even when PageIndex chat fails.
 
 ## Live PageIndex baseline
 

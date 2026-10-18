@@ -1,28 +1,44 @@
-"""Live PageIndex section and page navigation without the chat agent."""
+"""Live PageIndex CLI navigation across separate agent processes."""
 
-import asyncio
+import json
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from time import monotonic
 
-from mem_alive.documents import PageIndexDocuments
 
-
-async def evaluate() -> None:
-    backend = {"api_key": "ollama", "base_url": "http://127.0.0.1:11434/v1"}
+def evaluate() -> None:
     fixture = Path(__file__).parent / "fixtures/project_northstar.pdf"
     with tempfile.TemporaryDirectory() as directory:
-        documents = PageIndexDocuments.local(
-            directory,
-            index_model="openai/llama3.2",
-            chat_model="openai/llama3.2",
-            index_backend=backend,
-            chat_backend=backend,
-        )
+        database = Path(directory) / "memory.db"
+
+        def command(*arguments: str) -> object:
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "mem_alive.cli",
+                    "--db",
+                    str(database),
+                    "--namespace",
+                    "project",
+                    *arguments,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=180,
+            )
+            return json.loads(completed.stdout)
+
         started = monotonic()
-        doc_id = await asyncio.wait_for(documents.index_pdf(fixture), timeout=180)
-        tree = await asyncio.wait_for(documents.structure(doc_id), timeout=30)
-        pages = await asyncio.wait_for(documents.pages(doc_id, "2,4"), timeout=30)
+        indexed = command("index-pdf", str(fixture))
+        assert isinstance(indexed, dict)
+        doc_id = indexed["doc_id"]
+        tree = command("doc-tree", doc_id)
+        pages = command("doc-pages", doc_id, "2,4")
+        assert isinstance(tree, list) and isinstance(pages, list)
         by_page = {page["page_index"]: page["markdown"] for page in pages}
         checks = {
             "nonempty section tree": bool(tree),
@@ -37,4 +53,4 @@ async def evaluate() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(evaluate())
+    evaluate()
