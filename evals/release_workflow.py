@@ -29,7 +29,7 @@ def evaluate() -> None:
         "needs: build",
         "environment: pypi",
         "id-token: write",
-        "pypa/gh-action-pypi-publish@release/v1",
+        "pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1",
     ):
         assert requirement in workflow, f"Release workflow is missing: {requirement}"
 
