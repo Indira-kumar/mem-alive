@@ -1,8 +1,10 @@
+from typing import Any
+
 from mem_alive.schema.memory_schema import Memory, SearchResult
 
 
 def make_memory(**overrides):
-    defaults = dict(
+    defaults: dict[str, Any] = dict(
         id="id-1",
         content="hello world",
         vector=[0.1, 0.2],
