@@ -77,9 +77,11 @@ class SQLiteEvidenceLedger:
             source = self._read_source(connection, item.namespace, item.source_event_id)
             if source is None:
                 raise ValueError(f"unknown source event {item.source_event_id!r}")
-            if (item.span_start is None) != (item.span_end is None) or (
-                item.span_start is not None
-                and not (0 <= item.span_start < item.span_end <= len(source.content))
+            start, end = item.span_start, item.span_end
+            if (start is None) != (end is None):
+                raise ValueError("evidence span must be within its source")
+            if start is not None and end is not None and not (
+                0 <= start < end <= len(source.content)
             ):
                 raise ValueError("evidence span must be within its source")
             inserted = connection.execute(
