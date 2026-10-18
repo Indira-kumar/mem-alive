@@ -1,5 +1,6 @@
 from dataclasses import replace
 from datetime import datetime, timezone
+from typing import cast
 
 import pytest
 from mem_alive import Evidence, SourceEvent, SQLiteEvidenceLedger
@@ -71,6 +72,17 @@ def test_evidence_requires_an_existing_source_and_valid_span(tmp_path):
     ):
         with pytest.raises(ValueError, match="span"):
             ledger.add_evidence(invalid)
+    assert ledger.evidence_for_source("project-a", "turn-1") == []
+
+
+@pytest.mark.parametrize("offset", [0.5, 27.5, True])
+def test_evidence_rejects_non_integer_offsets(tmp_path, offset):
+    ledger = SQLiteEvidenceLedger(tmp_path / "memory.db")
+    ledger.append_source(source())
+    with pytest.raises(ValueError, match="integer"):
+        ledger.add_evidence(replace(evidence(), span_start=cast(int, offset)))
+    with pytest.raises(ValueError, match="integer"):
+        ledger.add_evidence(replace(evidence(), span_end=cast(int, offset)))
     assert ledger.evidence_for_source("project-a", "turn-1") == []
 
 

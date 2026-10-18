@@ -80,6 +80,10 @@ class SQLiteEvidenceLedger:
             start, end = item.span_start, item.span_end
             if (start is None) != (end is None):
                 raise ValueError("evidence span must be within its source")
+            if start is not None and end is not None and (
+                type(start) is not int or type(end) is not int
+            ):
+                raise ValueError("evidence span offsets must be integers")
             if start is not None and end is not None and not (
                 0 <= start < end <= len(source.content)
             ):
