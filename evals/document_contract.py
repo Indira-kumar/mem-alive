@@ -33,6 +33,12 @@ class StubClient:
     def list_documents(self) -> dict:
         return {"documents": [{"id": "document-1"}], "total": 1}
 
+    def get_document_structure(self, doc_id: str) -> list[dict]:
+        return [{"title": "Backup policy", "start_index": 2, "end_index": 2}]
+
+    def get_page_content(self, doc_id: str, pages: str) -> list[dict]:
+        return [{"page_index": 2, "markdown": "Backups run every 17 minutes."}]
+
     def delete_document(self, doc_id: str) -> None:
         self.deleted = doc_id
 
@@ -63,6 +69,8 @@ async def evaluate() -> None:
         except ValueError:
             checks["uncited answer rejected"] = True
         checks["document listing"] = (await documents.list_documents())["total"] == 1
+        checks["section tree"] = (await documents.structure(doc_id))[0]["start_index"] == 2
+        checks["source page"] = (await documents.pages(doc_id, "2"))[0]["page_index"] == 2
         await documents.delete_document(doc_id)
         checks["document deletion"] = stub.deleted == doc_id
     passed = sum(checks.values())

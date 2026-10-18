@@ -58,7 +58,7 @@ The sequence is an acceptance map, not a promise that all stages have passed. A 
 - Namespace-safe in-memory IDs and vector boundary checks.
 - SQLite persistence with schema versioning, namespace-scoped get/list/delete, transactional history, private file permissions, and an online backup.
 - Scored recall with a global limit; backend candidate search filters memory type before applying its limit.
-- Optional PageIndex text-PDF adapter with page citations, source-text verification for uncited numeric answers, and a local document eval.
+- Optional PageIndex text-PDF adapter with direct section-tree and source-page navigation, page citations, source-text verification for uncited numeric answers, and a local document eval.
 - Ollama conversation extraction with user-only provenance and duplicate suppression; raw transcript text is opt-in.
 - JSON CLI for separate agent processes and local document operations.
 - Deterministic safety, restart, retrieval, and adapter evals plus small live Ollama quality baselines.
@@ -78,7 +78,7 @@ Sources checked 2026-10-18: [Mem0 operations](https://github.com/mem0ai/mem0/blo
 | No silent fact loss | Zero compatible facts hidden in a curated similar-fact set | Deterministic policy eval passes; live set pending |
 | Persistence | Add, correct, restart, search, history, and backup restore succeed | Deterministic restart eval passes |
 | Retrieval | Correct type survives candidate crowding; global limit holds | Deterministic retrieval eval passes; real relevance set pending |
-| Document answers | Cite the correct page for answerable queries and abstain on unsupported queries | Synthetic PDF eval has passed but varies across runs; reliability and personal document eval pending |
+| Document answers | Cite the correct page for answerable queries and abstain on unsupported queries | Direct tree/page navigation passes; model chat fails across repeated runs; personal document eval pending |
 | Conversation extraction | Save grounded user preferences, events, and workflows while rejecting assistant guesses and small talk | Six-case live eval passes; broader corpus pending |
 | Daily use | One real agent workflow captures and recalls useful memory across sessions | CLI cross-process eval passes; deployment in owner's agent workflow pending |
 

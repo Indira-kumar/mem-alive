@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from mem_alive.documents import PageIndexDocuments
+from mem_alive.documents import DocumentRetrievalError, PageIndexDocuments
 
 
 class FakePageIndexClient:
@@ -33,6 +33,9 @@ class FakePageIndexClient:
 
     def get_page_content(self, doc_id: str, pages: str) -> list[dict]:
         return self.pages
+
+    def get_document_structure(self, doc_id: str) -> list[dict]:
+        return [{"title": "Current plan", "start_index": 2, "end_index": 2}]
 
     def list_documents(self) -> dict:
         return {"documents": [{"id": "doc-1"}], "total": 1}
@@ -114,6 +117,17 @@ async def test_document_lifecycle_routes_to_scoped_client():
     assert client.deleted == "doc-1"
 
 
+async def test_structure_and_pages_expose_direct_source_navigation():
+    client = FakePageIndexClient(
+        pages=[{"page_index": 2, "markdown": "The current backup interval is 17 minutes."}]
+    )
+    documents = PageIndexDocuments(client)
+    assert (await documents.structure("doc-1"))[0]["start_index"] == 2
+    assert (await documents.pages("doc-1", "2"))[0]["page_index"] == 2
+    with pytest.raises(ValueError, match="page numbers"):
+        await documents.pages("doc-1", "two")
+
+
 async def test_retries_pageindex_tool_error_once():
     class FlakyClient(FakePageIndexClient):
         def __init__(self):
@@ -131,3 +145,22 @@ async def test_retries_pageindex_tool_error_once():
     client = FlakyClient()
     await PageIndexDocuments(client).ask("doc-1", "Question")
     assert client.calls == 2
+
+
+async def test_repeated_pageindex_tool_error_is_controlled():
+    client = FakePageIndexClient(
+        answer=json.dumps(
+            {"name": "get_document", "parameters": {"errorCode": "INVALID_INPUT"}}
+        )
+    )
+    with pytest.raises(DocumentRetrievalError, match="invalid tool call"):
+        await PageIndexDocuments(client).ask("doc-1", "Question")
+
+
+async def test_pageindex_sdk_failure_is_controlled():
+    class FailingClient(FakePageIndexClient):
+        def chat(self, question: str, *, doc_id: str, citations: bool, extra_body: dict) -> str:
+            raise RuntimeError("max turns exceeded")
+
+    with pytest.raises(DocumentRetrievalError, match="max turns exceeded"):
+        await PageIndexDocuments(FailingClient()).ask("doc-1", "Question")

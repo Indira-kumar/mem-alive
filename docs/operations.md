@@ -25,7 +25,7 @@ UV_CACHE_DIR=/tmp/mem-alive-uv-cache uv run --package mem-alive --extra pageinde
 UV_CACHE_DIR=/tmp/mem-alive-uv-cache uv build --package mem-alive
 ```
 
-The deterministic evals are `evals/safe_memory.py`, `evals/durable_memory.py`, `evals/retrieval.py`, and `evals/document_contract.py`. With Ollama running and the two models installed, run `evals/live_embeddings.py`, `evals/live_ingestion.py`, `evals/pageindex_live.py`, and `evals/cli_roundtrip.py` through `uv run --package mem-alive --extra pageindex --group dev python <path>`. Live evals use small synthetic examples and do not prove general quality on personal documents.
+The deterministic evals are `evals/safe_memory.py`, `evals/durable_memory.py`, `evals/retrieval.py`, and `evals/document_contract.py`. With Ollama running and the two models installed, run `evals/live_embeddings.py`, `evals/live_ingestion.py`, `evals/pageindex_navigation_live.py`, `evals/pageindex_live.py`, and `evals/cli_roundtrip.py` through `uv run --package mem-alive --extra pageindex --group dev python <path>`. Live evals use small synthetic examples and do not prove general quality on personal documents.
 
 ## Current limits
 
@@ -33,4 +33,5 @@ The deterministic evals are `evals/safe_memory.py`, `evals/durable_memory.py`, `
 - SQLite vector search scans one namespace and the PageIndex fallback may read all pages when a numeric answer lacks a native citation. Measure latency before using either on large collections.
 - Federated scores combine different store policies and are not calibrated relevance probabilities across memory types.
 - PageIndex fallback verifies numeric answers against source text. Uncited nonnumeric answers are rejected. A citation supports a page match; it is not proof that every inference in the answer is correct.
+- The local PageIndex chat agent can fail on tool calls or its turn limit with a small model. The CLI returns a controlled error; `doc-tree` and `doc-pages` provide direct access to indexed sections and page text.
 - The local extraction and document evals cover a few synthetic cases. Before tagging v1, run a representative private corpus, record answer accuracy, false memories, citation correctness, abstention, latency, and recovery results.

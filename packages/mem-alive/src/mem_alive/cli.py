@@ -98,6 +98,13 @@ def _parser() -> argparse.ArgumentParser:
     ask.add_argument("question")
     ask.add_argument("--model", default="llama3.2")
     commands.add_parser("list-docs").add_argument("--model", default="llama3.2")
+    tree = commands.add_parser("doc-tree")
+    tree.add_argument("doc_id")
+    tree.add_argument("--model", default="llama3.2")
+    pages = commands.add_parser("doc-pages")
+    pages.add_argument("doc_id")
+    pages.add_argument("pages", help="Page number, range, or comma-separated list")
+    pages.add_argument("--model", default="llama3.2")
     delete_doc = commands.add_parser("forget-doc")
     delete_doc.add_argument("doc_id")
     delete_doc.add_argument("--model", default="llama3.2")
@@ -128,13 +135,19 @@ async def _documents(args: argparse.Namespace, db_path: Path) -> object:
         }
     if args.command == "list-docs":
         return await documents.list_documents()
+    if args.command == "doc-tree":
+        return await documents.structure(args.doc_id)
+    if args.command == "doc-pages":
+        return await documents.pages(args.doc_id, args.pages)
     await documents.delete_document(args.doc_id)
     return {"deleted": args.doc_id}
 
 
 async def _run(args: argparse.Namespace) -> object:
     db_path = args.db.expanduser()
-    if args.command in ("index-pdf", "ask-doc", "list-docs", "forget-doc"):
+    if args.command in (
+        "index-pdf", "ask-doc", "list-docs", "doc-tree", "doc-pages", "forget-doc"
+    ):
         return await _documents(args, db_path)
     db = SQLiteBackend(db_path)
     if args.command == "backup":

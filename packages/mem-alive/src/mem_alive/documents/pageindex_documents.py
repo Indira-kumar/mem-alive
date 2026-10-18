@@ -31,6 +31,10 @@ class UncitedAnswerError(ValueError):
         self.answer = answer
 
 
+class DocumentRetrievalError(RuntimeError):
+    """PageIndex could not complete a document query."""
+
+
 class PageIndexDocuments:
     """Keep source-document retrieval separate from atomic memory records."""
 
@@ -76,6 +80,18 @@ class PageIndexDocuments:
         """List documents in this client's scoped PageIndex library."""
         return await asyncio.to_thread(self._client.list_documents)
 
+    async def structure(self, doc_id: str) -> list[dict]:
+        """Return PageIndex's section tree without duplicating its full text."""
+        if not doc_id:
+            raise ValueError("doc_id is required")
+        return await asyncio.to_thread(self._client.get_document_structure, doc_id)
+
+    async def pages(self, doc_id: str, page_spec: str) -> list[dict]:
+        """Read cited source pages directly for inspection or manual navigation."""
+        if not doc_id or not re.fullmatch(r"[\d,\-\s]+", page_spec):
+            raise ValueError("doc_id and page numbers are required")
+        return await asyncio.to_thread(self._client.get_page_content, doc_id, page_spec)
+
     async def delete_document(self, doc_id: str) -> None:
         """Delete one document from this client's library."""
         await asyncio.to_thread(self._client.delete_document, doc_id)
@@ -85,22 +101,28 @@ class PageIndexDocuments:
         if not doc_id or not question.strip():
             raise ValueError("doc_id and question are required")
         for _ in range(self._max_attempts):
-            answer = await asyncio.to_thread(
-                self._client.chat,
-                question,
-                doc_id=doc_id,
-                citations=True,
-                extra_body={"temperature": self._temperature},
-            )
+            try:
+                answer = await asyncio.to_thread(
+                    self._client.chat,
+                    question,
+                    doc_id=doc_id,
+                    citations=True,
+                    extra_body={"temperature": self._temperature},
+                )
+            except Exception as exc:
+                raise DocumentRetrievalError(f"PageIndex query failed: {exc}") from exc
             try:
                 payload = json.loads(answer)
             except (json.JSONDecodeError, TypeError):
                 break
             details = payload.get("parameters") if isinstance(payload, dict) else None
-            if not (isinstance(details, dict) and details.get("errorCode")):
+            tool_error = (isinstance(details, dict) and bool(details.get("errorCode"))) or (
+                '"errorCode"' in answer and '"parameters"' in answer
+            )
+            if not tool_error:
                 break
         else:
-            raise RuntimeError("PageIndex repeatedly returned an invalid tool call")
+            raise DocumentRetrievalError("PageIndex repeatedly returned an invalid tool call")
         raw_citations = await asyncio.to_thread(self._client.get_citations, answer)
         citations = tuple(
             DocumentCitation(

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from time import monotonic
 
-from mem_alive.documents import PageIndexDocuments, UncitedAnswerError
+from mem_alive.documents import DocumentRetrievalError, PageIndexDocuments, UncitedAnswerError
 
 
 async def evaluate() -> None:
@@ -39,6 +39,8 @@ async def evaluate() -> None:
                 print(f"question={question!r} answer={answer.text!r} citations={answer.citations}")
             except UncitedAnswerError as exc:
                 print(f"question={question!r} rejected={exc} raw_answer={exc.answer!r}")
+            except DocumentRetrievalError as exc:
+                print(f"question={question!r} failed={exc}")
             query_seconds.append(round(monotonic() - query_started, 1))
         query_started = monotonic()
         try:
@@ -51,6 +53,9 @@ async def evaluate() -> None:
         except UncitedAnswerError as exc:
             abstained = True
             print(f"unsupported_rejected={exc} raw_answer={exc.answer!r}")
+        except DocumentRetrievalError as exc:
+            abstained = False
+            print(f"unsupported_failed={exc}")
         query_seconds.append(round(monotonic() - query_started, 1))
         print(
             f"model=ollama/llama3.2 date={datetime.now(timezone.utc).date()} "
