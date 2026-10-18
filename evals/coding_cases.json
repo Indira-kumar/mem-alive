@@ -1,0 +1,89 @@
+[
+  {
+    "id": "correction-after-failed-approach",
+    "session_a": [
+      {"kind": "tool_result", "text": "Mock tests passed; integration test failed on the callback path."},
+      {"kind": "user", "text": "For this repository, run the integration test first; the mocks missed this failure."}
+    ],
+    "session_b_task": "Fix the callback regression in the same repository.",
+    "required_context": [{"id": "integration-first", "status": "active"}],
+    "forbidden_context": [],
+    "oracle": "The callback regression is fixed and the integration test ran before mock tests."
+  },
+  {
+    "id": "project-exception-to-user-practice",
+    "session_a": [
+      {"kind": "user", "text": "Across my projects, run quick unit tests before slower suites."},
+      {"kind": "user", "text": "In repository A, run the integration suite first because the unit mocks miss database errors."}
+    ],
+    "session_b_task": "Fix the repository A database callback bug.",
+    "required_context": [{"id": "repo-a-integration-first", "status": "active"}],
+    "forbidden_context": [{"id": "unit-first-as-unqualified-rule", "status": "active"}],
+    "oracle": "The database callback works and the integration suite ran first."
+  },
+  {
+    "id": "general-practice-transfers",
+    "session_a": [
+      {"kind": "user", "text": "In every Python project I maintain, run the formatter before final review."}
+    ],
+    "session_b_task": "Finish a parser change in a different Python repository.",
+    "required_context": [{"id": "python-format-before-review", "status": "active"}],
+    "forbidden_context": [],
+    "oracle": "The parser tests pass and the formatter ran before final review."
+  },
+  {
+    "id": "changed-decision",
+    "session_a": [
+      {"kind": "user", "text": "Use Redis for the local cache in this repository."},
+      {"kind": "user", "text": "The Redis dependency is too costly here; switch the local cache to SQLite."}
+    ],
+    "session_b_task": "Finish the local cache implementation in this repository.",
+    "required_context": [{"id": "sqlite-cache-current", "status": "active"}],
+    "forbidden_context": [{"id": "redis-cache-stale", "status": "active"}],
+    "oracle": "The local cache uses SQLite, its tests pass, and Redis is not reintroduced."
+  },
+  {
+    "id": "earlier-failure-episode",
+    "session_a": [
+      {"kind": "tool_result", "text": "Migration 18 failed because a nullable column was made non-null before backfill."},
+      {"kind": "tool_result", "text": "Backfilling first, then applying the constraint, passed migration verification."}
+    ],
+    "session_b_task": "Add a non-null account field in this repository.",
+    "required_context": [{"id": "migration-18-episode", "status": "active"}],
+    "forbidden_context": [],
+    "oracle": "The migration backfills existing rows before the non-null constraint and passes verification."
+  },
+  {
+    "id": "unverified-procedure-is-candidate",
+    "session_a": [
+      {"kind": "agent", "text": "I think restarting the worker fixed the queue."},
+      {"kind": "tool_result", "text": "One queue recovery check passed after restarting the worker."}
+    ],
+    "session_b_task": "Investigate another stalled queue in this repository.",
+    "required_context": [{"id": "worker-restart-candidate", "status": "candidate"}],
+    "forbidden_context": [{"id": "worker-restart-proven", "status": "established"}],
+    "oracle": "The queue is recovered with a verified check; the single prior success is not presented as a proven procedure."
+  },
+  {
+    "id": "repeated-procedure-becomes-established",
+    "session_a": [
+      {"kind": "tool_result", "attempt": "a1", "text": "Queue recovery check passed after restarting the worker."},
+      {"kind": "tool_result", "attempt": "a2", "text": "A separate queue recovery check passed after restarting the worker."}
+    ],
+    "session_b_task": "Recover a stalled queue in this repository.",
+    "required_context": [{"id": "worker-restart-established", "status": "established"}],
+    "forbidden_context": [{"id": "worker-restart-unverified", "status": "candidate"}],
+    "oracle": "The queue is recovered with a verified check and the established procedure is applied only when its preconditions hold."
+  },
+  {
+    "id": "irrelevant-weak-memory-abstains",
+    "session_a": [
+      {"kind": "agent", "text": "I assume this repository uses Redis, but I did not inspect it."},
+      {"kind": "tool_result", "text": "The previous task only changed README formatting."}
+    ],
+    "session_b_task": "Fix the HTTP retry logic in this repository.",
+    "required_context": [],
+    "forbidden_context": [{"id": "unsupported-redis-claim", "status": "active"}],
+    "oracle": "HTTP retries pass their tests without relying on the unsupported Redis claim."
+  }
+]
