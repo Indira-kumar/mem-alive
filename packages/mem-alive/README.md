@@ -43,4 +43,6 @@ v0.1 ships with `InMemoryBackend`, zero dependencies, good for development and t
 
 v0.1.0. Core is done: all three stores, the in-memory backend, a local embedding provider (Ollama), and the federated `Memory` client, all async, with a test suite covering each module plus the integration path. MIT licensed.
 
-Still open: the LanceDB backend, a coding-agent app layer built on top, and eval/benchmark design.
+Still open: the LanceDB backend and a coding-agent app layer. The repository's
+[eval corpus and graders](../../evals/README.md) cover core behavior and the coding use case;
+live agent measurement still needs adapters.
