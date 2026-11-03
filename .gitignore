@@ -24,3 +24,8 @@ htmlcov/
 .DS_Store
 .vscode/
 .idea/
+
+# Local agent memory (including SQLite journal files)
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
