@@ -39,9 +39,13 @@ jobs:
 
       - name: Verify package
         run: |
-          uv run --locked --package mem-alive --extra lancedb --group dev pytest -q
-          uv run --locked --package mem-alive --extra lancedb --group dev ruff check .
-          uv run --locked --package mem-alive --extra lancedb --group dev ty check
+          uv run --locked --package mem-alive --all-extras --group dev pytest -q
+          uv run --locked --package mem-alive --all-extras --group dev ruff check .
+          uv run --locked --package mem-alive --all-extras --group dev ty check
+          uv run --locked --package mem-alive --all-extras --group dev python -m evals.sqlite
+          uv run --locked --package mem-alive --all-extras --group dev python -m evals.agent_memory
+          uv run --locked --package mem-alive --all-extras --group dev python -m evals.hybrid
+          uv run --locked --package mem-alive --all-extras --group dev python -m evals.mcp
 
       - name: Set release version and build
         env:

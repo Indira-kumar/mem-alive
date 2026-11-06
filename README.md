@@ -1,53 +1,141 @@
 # mem-alive
 
-[![PyPI](https://img.shields.io/pypi/v/mem-alive)](https://pypi.org/project/mem-alive/)
+Local, persistent memory for agents, with an async Python API, MCP tools, and an
+optional HTTP adapter. Models run through Ollama or an OpenAI-compatible endpoint;
+SQLite keeps memories, entity vectors, recent context, and revision history on disk.
 
-A memory layer for AI agents. Semantic, episodic, and procedural memory, built as a Python package.
+This branch implements the architecture described in [Agent Memory EXPLAINED –
+Complete Architecture](https://www.youtube.com/watch?v=aYfZN8t6AQs). See the
+[design and acceptance record](docs/local-agent-memory.md) for source references,
+verification evidence, and the remaining v1 release gates. This is a release
+candidate implementation, not a claim of full Mem0 product or SDK compatibility.
 
-## Why
+## Run as an MCP server
 
-Coding agents re-read the whole codebase every time they start a task. That burns tokens and adds round trips between the cloud model and the local harness. This library exists to fix that by giving agents actual memory instead of a blank slate every session.
+Install Python 3.11 or newer and Ollama, then prepare both local models:
 
-That said, it's not built just for coding agents. It's a general memory layer that works with any agentic setup or a plain RAG app. The coding-agent problem is the flagship test case, not something baked into the core.
+```sh
+ollama pull qwen3:8b
+ollama pull embeddinggemma
+pip install 'mem-alive[mcp]'
+mem-alive-mcp --db /absolute/path/memory.sqlite3 --namespace my-project
+```
 
-## Architecture
+Until this branch is released, install from this checkout instead:
+`pip install './packages/mem-alive[mcp]'`.
+The database's parent directory must already exist. Use the same embedding model
+for the lifetime of a database; changing dimensions or the runtime's model name
+is rejected. Model weights and Ollama are separate from the Python package.
 
-![architecture diagram](packages/mem-alive/artifacts/v0.1-architecture-diagram.png)
+Configure any client supporting MCP stdio, such as a coding agent, with:
 
-One `Memory` client fronts three stores, each backed by the same pluggable `StorageBackend` and `EmbeddingProvider`.
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "command": "mem-alive-mcp",
+      "args": [
+        "--db", "/absolute/path/memory.sqlite3",
+        "--namespace", "my-project"
+      ]
+    }
+  }
+}
+```
 
-## Three kinds of memory
+Client configuration formats vary. The executable and arguments above are the
+server contract; register them through your client's MCP configuration. Tools:
+`add_memory`, `search_memories`, `get_memory`, `list_memories`, `update_memory`,
+`delete_memory`, and `memory_history`. The configured namespace is fixed; a tool
+caller cannot override it. Agent instructions must tell the agent when to save
+and search: installing tools alone does not capture every turn automatically.
 
-- **Semantic** - durable facts, no recency weighting. New facts can supersede old, similar ones.
-- **Episodic** - specific past events, timestamped, recency-weighted (exponential half-life decay), never merged.
-- **Procedural** - skills and workflows, retrieved by hybrid search (embedding similarity + keyword overlap).
+## Python
 
-Each type has its own store with its own retrieval logic, but all three share one schema and one `memory_type` tag, so a single federated `recall()` on the `Memory` client can query across all of them at once.
+```python
+import asyncio
+from mem_alive.runtime import build_memory
 
-## Scoping
+async def main():
+    async with build_memory("memory.sqlite3") as memory:
+        await memory.add(
+            [{"role": "user", "content": "This repository uses pytest."}],
+            namespace="my-project",
+            metadata={"user_id": "alice", "agent_id": "coding-agent"},
+        )
+        hits = await memory.search("How do I test this repository?", "my-project")
+        print(hits)
 
-- `namespace` - hard partition, never crossed. Means whatever the caller wants (agent, repo, tenant).
-- `metadata` - flexible filters within a namespace (session id, tags, etc).
+asyncio.run(main())
+```
 
-## Contradictions
+`AgentMemory` accepts injected `EmbeddingProvider`, `InferenceProvider`, and
+`SQLiteBackend` instances. `JSONInferenceProvider` supports Ollama and
+OpenAI-compatible chat APIs; a compatible schema-capable model is required.
+This lets a framework call memory at its own turn boundaries without a framework
+dependency. MCP and HTTP are adapters over this same service.
 
-Semantic writes check for contradictions on every `remember()`: embed the new fact, search for similar existing facts in the same namespace, and if similarity crosses a threshold, mark the old fact as superseded. v0.1 uses a similarity threshold for this. A smarter LLM-arbiter version (duplicate vs contradiction vs refinement) is a future upgrade, not required for the first release.
+## How memory works
 
-## Storage
+Ingestion loads the scoped summary, the last ten messages, recent memories, and
+memories related to the new turn. A model extracts facts, named entities, and an
+updated summary. Exact text is deduplicated by SHA-256. Memories, entity links,
+context, and audit changes commit in one transaction. Failures leave no partial
+capture. `infer=False` stores raw message text without model inference or entity
+extraction; embeddings are still required.
 
-The backend stays dumb: vector search, metadata filters, CRUD, nothing else. Recency decay, hybrid scoring, and contradiction logic all live above it, in the store layer, so any backend stays swappable.
+Ingestion is additive: a newly stated correction does not automatically erase an
+older memory. Use `update` or `delete` when replacing information explicitly.
+Updates regenerate embeddings, hashes, keyword tokens, and entity links.
 
-v0.1 ships with `InMemoryBackend`, zero dependencies, good for development and testing. A `LanceDB` backend (embedded, no server required) is planned as an optional extra (`pip install mem-alive[lancedb]`) for anything that needs to persist across restarts.
+Retrieval takes `max(4*K,60)` semantic candidates, then reranks those candidates
+using lemmatized BM25 and entity specificity. Keyword or entity matches cannot
+introduce additional memories. Results include scoring components. Namespace is
+a hard boundary; metadata filters narrow the candidate set within it.
 
-## Status
+## HTTP and other integrations
 
-## Status
+Install `mem-alive[api]`, construct a service, and pass it to
+`mem_alive.api.create_app(memory, namespace="my-project")`. Run that ASGI app with
+your preferred server. The adapter owns the service lifetime and provides
+`POST /memories`, `POST /memories/search`, scoped CRUD, and revision history.
+It supplies no authentication: bind to loopback or add authentication in the host.
+This is a mem-alive API, not a Mem0 wire-compatible replacement. Frameworks can
+use the Python API, HTTP, or their MCP integration; bundled Mem0-specific SDK
+adapters and its hosted dashboard are outside this implementation.
 
-v0.1.1. Core is done: all three stores, the in-memory backend, a local embedding provider (Ollama), and the federated `Memory` client, all async, with a test suite covering each module plus the integration path.
-MIT licensed.
+## Data and operational limits
 
-Remaining work:
+All persistent state stays in the selected SQLite file (plus SQLite WAL files).
+The two vector collections are separate logical tables with exact cosine search;
+search scans the namespace and is intended for local collections, not a claim of
+ANN-scale throughput. English dictionary lemmatization is local and requires no
+model downloads. Other languages retain token search without morphological parity.
 
-- **LanceDB backend.** `InMemoryBackend` shipped first because the `StorageBackend` interface needed a second implementation before I trusted it, and I wanted the store-layer logic settled before committing to a persistence format. The `lancedb` extra is reserved and currently a no-op.
-- **Coding-agent app layer.** The flagship use case in the Why section is a consumer of this library, not part of it. Keeping it out of the core is deliberate.
-- **Evals.** The [eval corpus and graders](evals/README.md) now cover core behavior, retrieval, and the coding use case. Current-client probes expose two known gaps; live coding-agent measurement still needs adapters.
+Delete removes the active memory and entity links. Audit history retains prior
+content; it is not a secure-erasure API. Treat the database, summaries, and recent
+messages as private data. A namespace is a partition, not authentication. Separate
+untrusted users through separate service instances or an authenticated host.
+
+The original `Memory` three-store API remains for existing callers. It retains
+its earlier similarity-based supersession behavior; new applications should use
+`AgentMemory`. The older evals document this API's limitations separately.
+
+## Development and release
+
+```sh
+uv run --package mem-alive --all-extras --group dev pytest -q
+uv run --package mem-alive --all-extras --group dev ruff check .
+uv run --package mem-alive --all-extras --group dev ty check
+uv run --package mem-alive --all-extras --group dev python -m evals.sqlite
+uv run --package mem-alive --all-extras --group dev python -m evals.agent_memory
+uv run --package mem-alive --all-extras --group dev python -m evals.hybrid
+uv run --package mem-alive --all-extras --group dev python -m evals.mcp
+uv run --package mem-alive --all-extras --group dev python -m evals.agent_memory --live
+uv build --package mem-alive
+```
+
+Scripted evals isolate persistence, pipeline, ranking, and transport behavior. They
+do not measure model quality. The live eval requires a running local model server
+and installed weights and must pass before declaring v1 production ready.
+Publishing remains an explicit maintainer action; see [releasing](docs/releasing.md).

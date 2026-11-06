@@ -1,0 +1,59 @@
+{
+  "date": "2026-11-03T23:01:26.966575+00:00",
+  "runs": [
+    {
+      "command": ".venv/bin/pytest -q",
+      "exit_code": 0,
+      "stdout": "........................................................................ [ 51%]\n...................................................................      [100%]\n139 passed in 0.47s\n",
+      "stderr": ""
+    },
+    {
+      "command": ".venv/bin/ruff check .",
+      "exit_code": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "command": ".venv/bin/ty check",
+      "exit_code": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "command": ".venv/bin/python -m evals.sqlite",
+      "exit_code": 0,
+      "stdout": "{\"cases\": {\"restart_durability\": true, \"project_isolation\": true, \"corrected_preference_only\": true, \"stale_write_rejected\": true, \"correction_audit\": true, \"concurrent_capture_rejected\": true, \"bounded_context_persistence_and_isolation\": true, \"entity_link_persistence_and_isolation\": true, \"deleted_memory_entity_cleanup\": true}, \"passed\": 9, \"total\": 9}\n",
+      "stderr": ""
+    },
+    {
+      "command": ".venv/bin/python -m evals.agent_memory",
+      "exit_code": 0,
+      "stdout": "{\n  \"mode\": \"scripted-orchestration-only\",\n  \"model\": null,\n  \"embedding_model\": null,\n  \"temperature\": null,\n  \"abstention_threshold\": 0.3,\n  \"date\": \"2026-11-03T23:01:26.211212+00:00\",\n  \"results\": {\n    \"compatible-facts\": true,\n    \"correction-accumulates\": true,\n    \"duplicate-noop\": true,\n    \"namespace-isolation\": true,\n    \"abstention\": true,\n    \"context-durability\": true,\n    \"restart-durability\": true\n  },\n  \"passed\": true\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": ".venv/bin/python -m evals.hybrid",
+      "exit_code": 0,
+      "stdout": "{\n  \"kind\": \"deterministic-hybrid-eval\",\n  \"checks\": {\n    \"lemmatized_task_recall\": true,\n    \"specific_entity_outranks_generic\": true,\n    \"verified_entity_fanout_formula\": true,\n    \"candidate_boundary\": true,\n    \"bounded_explainable_scores\": true\n  },\n  \"passed\": true\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": ".venv/bin/python -m evals.mcp",
+      "exit_code": 0,
+      "stdout": "{\n  \"kind\": \"deterministic-surface-eval\",\n  \"checks\": {\n    \"mcp_write\": true,\n    \"mcp_reopen_recall\": true,\n    \"mcp_update\": true,\n    \"mcp_audit\": true,\n    \"mcp_scope\": true,\n    \"http_shared_persistence\": true,\n    \"http_scope_override_rejected\": true,\n    \"http_delete\": true,\n    \"delete_survives_reopen\": true\n  },\n  \"passed\": true\n}\n",
+      "stderr": "Processing request of type CallToolRequest\nProcessing request of type ListToolsRequest\nProcessing request of type CallToolRequest\nProcessing request of type ListToolsRequest\nProcessing request of type CallToolRequest\nProcessing request of type CallToolRequest\nProcessing request of type ListToolsRequest\nHTTP Request: GET http://eval/memories/ea700cbe-8649-45fd-8c97-1a164ae26616 \"HTTP/1.1 200 OK\"\nHTTP Request: POST http://eval/memories \"HTTP/1.1 422 Unprocessable Entity\"\nHTTP Request: DELETE http://eval/memories/ea700cbe-8649-45fd-8c97-1a164ae26616 \"HTTP/1.1 204 No Content\"\n"
+    },
+    {
+      "command": ".venv/bin/python -m evals.core --strict",
+      "exit_code": 1,
+      "stdout": "{\n  \"results\": [\n    {\n      \"name\": \"namespace-isolation\",\n      \"category\": \"scope\",\n      \"passed\": true,\n      \"required_recall\": 1.0,\n      \"context_precision\": 1.0,\n      \"retrieved\": [\n        \"Project A uses PostgreSQL\"\n      ],\n      \"missing\": [],\n      \"unexpected\": [],\n      \"limit_exceeded\": false\n    },\n    {\n      \"name\": \"metadata-isolation\",\n      \"category\": \"scope\",\n      \"passed\": true,\n      \"required_recall\": 1.0,\n      \"context_precision\": 1.0,\n      \"retrieved\": [\n        \"Team red deploys on Friday\"\n      ],\n      \"missing\": [],\n      \"unexpected\": [],\n      \"limit_exceeded\": false\n    },\n    {\n      \"name\": \"semantic-version-visibility\",\n      \"category\": \"versioning\",\n      \"passed\": true,\n      \"required_recall\": 1.0,\n      \"context_precision\": 1.0,\n      \"retrieved\": [\n        \"The service uses PostgreSQL\"\n      ],\n      \"missing\": [],\n      \"unexpected\": [],\n      \"limit_exceeded\": false\n    },\n    {\n      \"name\": \"similar-compatible-facts\",\n      \"category\": \"reconciliation\",\n      \"passed\": false,\n      \"required_recall\": 0.5,\n      \"context_precision\": 1.0,\n      \"retrieved\": [\n        \"PostgreSQL is also used for analytics\"\n      ],\n      \"missing\": [\n        \"PostgreSQL is the primary database\"\n      ],\n      \"unexpected\": [],\n      \"limit_exceeded\": false\n    },\n    {\n      \"name\": \"episodes-remain-distinct\",\n      \"category\": \"episode\",\n      \"passed\": true,\n      \"required_recall\": 1.0,\n      \"context_precision\": 1.0,\n      \"retrieved\": [\n        \"Build 42 passed after retry\",\n        \"Build 41 failed after a timeout\"\n      ],\n      \"missing\": [],\n      \"unexpected\": [],\n      \"limit_exceeded\": false\n    },\n    {\n      \"name\": \"unrelated-query-abstains\",\n      \"category\": \"abstention\",\n      \"passed\": true,\n      \"required_recall\": 1.0,\n      \"context_precision\": 1.0,\n      \"retrieved\": [],\n      \"missing\": [],\n      \"unexpected\": [],\n      \"limit_exceeded\": false\n    },\n    {\n      \"name\": \"federated-top-k\",\n      \"category\": \"ranking\",\n      \"passed\": false,\n      \"required_recall\": 1.0,\n      \"context_precision\": 1.0,\n      \"retrieved\": [\n        \"Run integration tests before unit tests\",\n        \"Use integration tests for this repository\",\n        \"An integration test caught yesterday's bug\"\n      ],\n      \"missing\": [],\n      \"unexpected\": [],\n      \"limit_exceeded\": true\n    }\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": ".venv/bin/python -m evals.agent_memory --live",
+      "exit_code": 2,
+      "stdout": "{\"mode\": \"live-model-quality\", \"model\": \"qwen3:8b\", \"embedding_model\": \"embeddinggemma\", \"date\": \"2026-11-03T23:01:26.917037+00:00\", \"passed\": false, \"failure\": \"environment\", \"error\": \"ConnectError\"}\n",
+      "stderr": ""
+    }
+  ]
+}

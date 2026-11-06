@@ -11,6 +11,8 @@ class Memory:
     memory_type: str
     namespace: str
     superseded: bool = False
+    content_hash: str = ""
+    keywords: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 

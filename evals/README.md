@@ -77,3 +77,21 @@ Coding run example (one pair; the full file needs one pair per case):
 On **2026-10-18**, the deterministic current-client baseline was **5/7** passing. `similar-compatible-facts` missed one compatible fact because similarity alone superseded it. `federated-top-k` returned three contexts for `top_k=1`. These failures are retained as requirements for future work. The fixture and grader tests passed in **0.15 s** on this checkout. Fixed vectors do not measure real embedding retrieval quality.
 
 The eleven core contracts, seven retrieval cases, and eight coding cases are *not* product-pass claims. They are scored corpus contracts awaiting adapters and, for coding, independently runnable task oracles. Implement the generic event/evidence API first, then map its output into the core contract format. Add a retrieval adapter and run repeated local-model baselines before proposing thresholds. Add coding and host adapters before running the paired agent study. Report failures by capture, extraction, reconciliation, indexing, candidate generation, ranking, delivery, or agent use. Keep observed model/configuration and run variance with every live baseline.
+
+## Local agent memory candidate
+
+The new `AgentMemory` application service follows the owner-adopted video
+architecture (ADD-only capture). The legacy `Memory` baseline above remains a
+separate diagnostic and is not silently counted as passing.
+
+Run these with `uv run --package mem-alive --all-extras --group dev python -m`:
+
+- `evals.sqlite`: nine deterministic persistence, isolation, context/entity, audit, and concurrency checks.
+- `evals.agent_memory`: seven deterministic pipeline checks with scripted inference; `--live` selects real Ollama models and embeddings.
+- `evals.hybrid`: five ranking checks, including candidate boundaries and independently computed entity weights.
+- `evals.mcp`: nine real MCP SDK/HTTP protocol checks over persistent SQLite.
+
+Deterministic modes isolate behavior and do not establish model quality.
+Live runs report provider/model/settings/date and exit nonzero for unavailable
+services, malformed model responses, or failed quality criteria. See the
+[design record](../docs/local-agent-memory.md) for release boundaries and evidence.

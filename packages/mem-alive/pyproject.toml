@@ -12,10 +12,16 @@ authors = [
 dependencies = [
     "httpx>=0.28.1",
     "numpy>=2.4.6",
+    "simplemma>=1.1,<2",
 ]
 
 [project.optional-dependencies]
 lancedb = ["lancedb"]
+mcp = ["mcp>=1.12,<2"]
+api = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1"]
+
+[project.scripts]
+mem-alive-mcp = "mem_alive.mcp:main"
 
 [project.urls]
 Homepage = "https://github.com/Indira-kumar/mem-alive"
